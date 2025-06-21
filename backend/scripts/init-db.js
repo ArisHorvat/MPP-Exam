@@ -20,6 +20,27 @@ async function initializeDatabase() {
         const result = await pool.query('SELECT COUNT(*) as count FROM candidates');
         console.log(`Found ${result.rows[0].count} candidates in database`);
         
+        // Create test users
+        console.log('Creating test users...');
+        const testUsers = [
+            { name: 'John Doe', cnp: '12345' },
+            { name: 'Jane Smith', cnp: '67890' },
+            { name: 'Bob Johnson', cnp: '11111' }
+        ];
+        
+        for (const user of testUsers) {
+            try {
+                await pool.query(`
+                    INSERT INTO users (name, cnp) 
+                    VALUES ($1, $2) 
+                    ON CONFLICT (cnp) DO NOTHING
+                `, [user.name, user.cnp]);
+                console.log(`Created user: ${user.name} (CNP: ${user.cnp})`);
+            } catch (error) {
+                console.log(`User ${user.name} already exists or error: ${error.message}`);
+            }
+        }
+        
         // Generate initial fake news and social media content
         console.log('Generating initial fake news and social media content...');
         await fakeNewsService.populateInitialNews();
