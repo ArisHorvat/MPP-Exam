@@ -28,13 +28,13 @@
 }
 
 .election-status {
-    display: flex;
-    justify-content: center;
+    margin-top: 20px;
 }
 
 .status-badge {
     padding: 8px 16px;
     border-radius: 20px;
+    color: white;
     font-weight: 600;
     font-size: 0.9rem;
     text-transform: uppercase;
@@ -471,4 +471,58 @@
     .final-result-card {
         padding: 15px;
     }
+}
+
+.user-auto-vote-info {
+    margin: 20px 0;
+    display: flex;
+    justify-content: center;
+}
+
+.auto-vote-badge {
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 500px;
+    width: 100%;
+}
+
+.auto-vote-icon {
+    font-size: 1.5rem;
+}
+
+.auto-vote-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.auto-vote-details strong {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.auto-vote-reason {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    font-style: italic;
+}
+
+.winner-message {
+    margin-top: 30px;
+    padding: 18px 24px;
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+    color: white;
+    font-size: 1.3rem;
+    font-weight: 700;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(76, 175, 80, 0.15);
+    letter-spacing: 0.5px;
+    animation: slideIn 0.4s ease;
 } 

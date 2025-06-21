@@ -70,12 +70,12 @@ const SecondRoundNews = ({ user, onClose }) => {
             // Clear existing news for both candidates
             await apiService.clearUserTargetedNews(user.cnp);
             
-            // Generate positive news for selected candidate
+            // Generate positive news for selected candidate (3 articles)
             await apiService.generateUserTargetedNews(user.cnp, selectedCandidate.candidate_id, 'positive');
             await apiService.generateUserTargetedNews(user.cnp, selectedCandidate.candidate_id, 'positive');
             await apiService.generateUserTargetedNews(user.cnp, selectedCandidate.candidate_id, 'positive');
             
-            // Generate negative news for the other candidate
+            // Generate negative news for the other candidate (3 articles)
             await apiService.generateUserTargetedNews(user.cnp, otherCandidate.candidate_id, 'negative');
             await apiService.generateUserTargetedNews(user.cnp, otherCandidate.candidate_id, 'negative');
             await apiService.generateUserTargetedNews(user.cnp, otherCandidate.candidate_id, 'negative');
@@ -205,6 +205,7 @@ const SecondRoundNews = ({ user, onClose }) => {
             
             <div className="candidates-selection">
                 <h4>Select a candidate to see personalized news:</h4>
+                <p className="selection-info">💡 Selecting a candidate will generate positive news for them and negative news for the other candidate</p>
                 <div className="candidates-grid">
                     {candidates.map((candidate) => (
                         <div 
@@ -231,7 +232,7 @@ const SecondRoundNews = ({ user, onClose }) => {
                         <span className="auto-vote-icon">🗳️</span>
                         <div className="auto-vote-text">
                             <strong>Auto-voted for {autoVoteResult.candidate_name}</strong>
-                            <span className="auto-vote-reason">{autoVoteResult.reason}</span>
+                            <span className="auto-vote-reason">Based on positive news preference - {autoVoteResult.reason}</span>
                         </div>
                     </div>
                 </div>
@@ -240,7 +241,7 @@ const SecondRoundNews = ({ user, onClose }) => {
             {selectedCandidate && (
                 <div className="dynamic-news-section">
                     <div className="news-header-section">
-                        <h4>📰 News for {selectedCandidate.candidate_name}</h4>
+                        <h4>📰 Dynamic News: Positive for {selectedCandidate.candidate_name}, Negative for {candidates.find(c => c.candidate_id !== selectedCandidate.candidate_id)?.candidate_name}</h4>
                         {newsLoading && <div className="news-loading">Generating fresh news...</div>}
                     </div>
                     
@@ -250,34 +251,50 @@ const SecondRoundNews = ({ user, onClose }) => {
                                 <p>No news available. Select a candidate to generate personalized news.</p>
                             </div>
                         ) : (
-                            <div className="news-list">
-                                {targetedNews.map((news) => (
-                                    <div 
-                                        key={news.id} 
-                                        className={`news-item ${!news.is_read ? 'unread' : ''}`}
-                                        onClick={() => handleNewsClick(news)}
-                                    >
-                                        <div className="news-header">
-                                            <h5>{news.title}</h5>
-                                            <span 
-                                                className="sentiment-badge"
-                                                style={{ backgroundColor: getSentimentColor(news.sentiment) }}
-                                            >
-                                                {getSentimentIcon(news.sentiment)}
-                                            </span>
-                                        </div>
-                                        <div className="news-meta">
-                                            <span className="source">{news.source}</span>
-                                            <span className="candidate">{news.candidate_name}</span>
-                                            <span className="category">{news.category}</span>
-                                        </div>
-                                        <div className="news-preview">
-                                            {news.content.substring(0, 100)}...
-                                        </div>
-                                        {!news.is_read && <div className="unread-indicator">NEW</div>}
+                            <>
+                                <div className="news-summary">
+                                    <div className="summary-item positive">
+                                        <span className="summary-icon">👍</span>
+                                        <span className="summary-text">
+                                            <strong>{selectedCandidate.candidate_name}:</strong> {targetedNews.filter(n => n.candidate_id === selectedCandidate.candidate_id && n.sentiment === 'positive').length} positive articles
+                                        </span>
                                     </div>
-                                ))}
-                            </div>
+                                    <div className="summary-item negative">
+                                        <span className="summary-icon">👎</span>
+                                        <span className="summary-text">
+                                            <strong>{candidates.find(c => c.candidate_id !== selectedCandidate.candidate_id)?.candidate_name}:</strong> {targetedNews.filter(n => n.candidate_id !== selectedCandidate.candidate_id && n.sentiment === 'negative').length} negative articles
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="news-list">
+                                    {targetedNews.map((news) => (
+                                        <div 
+                                            key={news.id} 
+                                            className={`news-item ${!news.is_read ? 'unread' : ''}`}
+                                            onClick={() => handleNewsClick(news)}
+                                        >
+                                            <div className="news-header">
+                                                <h5>{news.title}</h5>
+                                                <span 
+                                                    className="sentiment-badge"
+                                                    style={{ backgroundColor: getSentimentColor(news.sentiment) }}
+                                                >
+                                                    {getSentimentIcon(news.sentiment)}
+                                                </span>
+                                            </div>
+                                            <div className="news-meta">
+                                                <span className="source">{news.source}</span>
+                                                <span className="candidate">{news.candidate_name}</span>
+                                                <span className="category">{news.category}</span>
+                                            </div>
+                                            <div className="news-preview">
+                                                {news.content.substring(0, 100)}...
+                                            </div>
+                                            {!news.is_read && <div className="unread-indicator">NEW</div>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
                         )}
                     </div>
                 </div>

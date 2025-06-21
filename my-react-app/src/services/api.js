@@ -44,6 +44,11 @@ class ApiService {
         return response.json();
     }
 
+    async getUserVote(userCnp) {
+        const response = await fetch(`${API_BASE_URL}/api/user-vote/${userCnp}`);
+        return response.json();
+    }
+
     // Authentication methods
     async register(name, cnp) {
         const response = await fetch(`${API_BASE_URL}/api/register`, {

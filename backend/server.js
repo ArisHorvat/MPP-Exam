@@ -287,6 +287,39 @@ app.get('/api/voting-results', async (req, res) => {
     }
 });
 
+// Get user's specific vote
+app.get('/api/user-vote/:userCnp', async (req, res) => {
+    try {
+        const { userCnp } = req.params;
+        
+        // Get user's vote from database
+        const voteResult = await pool.query(`
+            SELECT v.candidate_id, v.candidate_name, v.candidate_party, v.created_at
+            FROM votes v
+            WHERE v.cnp = $1
+            ORDER BY v.created_at DESC
+            LIMIT 1
+        `, [userCnp]);
+        
+        if (voteResult.rows.length === 0) {
+            return res.json({ hasVoted: false });
+        }
+        
+        const vote = voteResult.rows[0];
+        res.json({
+            hasVoted: true,
+            candidate_id: vote.candidate_id,
+            candidate_name: vote.candidate_name,
+            candidate_party: vote.candidate_party,
+            voted_at: vote.created_at
+        });
+        
+    } catch (error) {
+        console.error('Error getting user vote:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Fake News API endpoints
 app.get('/api/news', async (req, res) => {
     try {

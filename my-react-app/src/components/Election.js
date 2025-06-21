@@ -9,11 +9,13 @@ const Election = ({ user }) => {
     const [candidates, setCandidates] = useState([]);
     const [selectedCandidate, setSelectedCandidate] = useState(null);
     const [showVotingInterface, setShowVotingInterface] = useState(false);
+    const [userAutoVote, setUserAutoVote] = useState(null);
 
     useEffect(() => {
         loadElectionResults();
         loadCandidates();
-    }, []);
+        checkUserAutoVote();
+    }, [user]);
 
     const loadElectionResults = async () => {
         try {
@@ -42,6 +44,25 @@ const Election = ({ user }) => {
         }
     };
 
+    const checkUserAutoVote = async () => {
+        if (!user || !user.cnp) return;
+        
+        try {
+            // Check if user has voted using the new API
+            const voteData = await apiService.getUserVote(user.cnp);
+            
+            if (voteData.hasVoted) {
+                setUserAutoVote({
+                    candidate_name: voteData.candidate_name,
+                    candidate_party: voteData.candidate_party,
+                    reason: 'Auto-voted based on news preferences'
+                });
+            }
+        } catch (error) {
+            console.error('Error checking user auto-vote:', error);
+        }
+    };
+
     const handleSimulateFirstRound = async () => {
         try {
             setLoading(true);
@@ -53,6 +74,9 @@ const Election = ({ user }) => {
             }));
             setSimulationStatus('second-round-auto');
             alert('First round completed! 90 automatic votes + your auto-vote based on news preferences have been cast. Top 2 candidates advance to second round.');
+            
+            // Check and display user's auto-vote
+            await checkUserAutoVote();
             
             // Automatically start second round
             setTimeout(() => {
@@ -130,6 +154,7 @@ const Election = ({ user }) => {
                 setSimulationStatus('not-started');
                 setShowVotingInterface(false);
                 setSelectedCandidate(null);
+                setUserAutoVote(null);
                 alert('Election reset successfully!');
             } catch (error) {
                 console.error('Error resetting election:', error);
@@ -181,6 +206,19 @@ const Election = ({ user }) => {
                 <h1>🗳️ Interactive Election Simulation</h1>
                 <p>First Round: 90 automatic votes + your auto-vote based on news preferences</p>
                 <p>Second Round: 90 automatic votes + your manual vote for the top 2 candidates</p>
+                
+                {userAutoVote && (
+                    <div className="user-auto-vote-info">
+                        <div className="auto-vote-badge">
+                            <span className="auto-vote-icon">🗳️</span>
+                            <div className="auto-vote-details">
+                                <strong>Your Auto-Vote:</strong> {userAutoVote.candidate_name} ({userAutoVote.candidate_party})
+                                <span className="auto-vote-reason">{userAutoVote.reason}</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                
                 <div className="election-status">
                     <span 
                         className="status-badge"
@@ -322,6 +360,19 @@ const Election = ({ user }) => {
                                     </div>
                                 ))}
                             </div>
+                            {/* Custom winner message */}
+                            {(() => {
+                                const [winner, runnerUp] = electionResults.secondRound;
+                                if (!winner || !runnerUp) return null;
+                                const winnerPct = (winner.votes / 101) * 100;
+                                const runnerUpPct = (runnerUp.votes / 101) * 100;
+                                const margin = winnerPct - runnerUpPct;
+                                if (margin > 5) {
+                                    return <div className="winner-message">🎉 Congratulations, you are moving to Chinteni!</div>;
+                                } else {
+                                    return <div className="winner-message">🎉 Congratulations, that was a close one!</div>;
+                                }
+                            })()}
                         </div>
                     )}
                 </div>
