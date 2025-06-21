@@ -538,13 +538,23 @@ class FakeNewsGenerator {
                     preferenceType = 'positive';
                     strength = this.getRandomNumber(7, 9);
                 } else if (candidate.party === userVote.candidate_party) {
-                    // Same party - slightly positive
-                    preferenceType = 'positive';
-                    strength = this.getRandomNumber(4, 6);
+                    // Same party - mostly positive but some neutral
+                    if (this.getRandomNumber(1, 3) <= 2) {
+                        preferenceType = 'positive';
+                        strength = this.getRandomNumber(4, 6);
+                    } else {
+                        preferenceType = 'neutral';
+                        strength = this.getRandomNumber(3, 5);
+                    }
                 } else {
-                    // Different party - negative preference
-                    preferenceType = 'negative';
-                    strength = this.getRandomNumber(4, 6);
+                    // Different party - mix of negative and neutral for realism
+                    if (this.getRandomNumber(1, 3) <= 2) {
+                        preferenceType = 'negative';
+                        strength = this.getRandomNumber(4, 6);
+                    } else {
+                        preferenceType = 'neutral';
+                        strength = this.getRandomNumber(3, 5);
+                    }
                 }
 
                 await this.updateUserPreference(userCnp, candidate.id, preferenceType, strength);
@@ -564,7 +574,18 @@ class FakeNewsGenerator {
             const candidates = candidatesResult.rows;
 
             for (const candidate of candidates) {
-                const preferenceType = this.getRandomItem(['positive', 'negative', 'neutral']);
+                // Create more balanced preferences: 40% neutral, 30% positive, 30% negative
+                const rand = this.getRandomNumber(1, 10);
+                let preferenceType;
+                
+                if (rand <= 4) {
+                    preferenceType = 'neutral';
+                } else if (rand <= 7) {
+                    preferenceType = 'positive';
+                } else {
+                    preferenceType = 'negative';
+                }
+                
                 const strength = this.getRandomNumber(1, 5);
                 
                 await this.updateUserPreference(userCnp, candidate.id, preferenceType, strength);
@@ -584,12 +605,27 @@ class FakeNewsGenerator {
             const candidatesResult = await pool.query('SELECT * FROM candidates');
             
             for (const user of usersResult.rows) {
+                // First, generate user preferences if they don't exist
+                try {
+                    await this.generateInitialUserPreferences(user.cnp);
+                } catch (error) {
+                    console.log(`User preferences already exist for ${user.cnp}: ${error.message}`);
+                }
+                
                 for (const candidate of candidatesResult.rows) {
-                    // Generate 1-3 news articles per candidate per user
+                    // Generate 1-3 news articles per candidate per user with varied sentiments
                     const articleCount = this.getRandomNumber(1, 3);
                     
                     for (let i = 0; i < articleCount; i++) {
-                        await this.generateUserTargetedNews(user.cnp, candidate.id);
+                        // For variety, sometimes override the user's preference with a different sentiment
+                        let sentiment = null;
+                        if (i > 0 && this.getRandomNumber(1, 3) === 1) {
+                            // 1/3 chance to use a different sentiment for variety
+                            const sentiments = ['positive', 'negative', 'neutral'];
+                            sentiment = this.getRandomItem(sentiments);
+                        }
+                        
+                        await this.generateUserTargetedNews(user.cnp, candidate.id, sentiment);
                     }
                 }
             }

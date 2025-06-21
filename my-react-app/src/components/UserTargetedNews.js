@@ -27,9 +27,11 @@ const UserTargetedNews = ({ user, candidateId = null, onClose }) => {
                 news = await apiService.getUserTargetedNews(user.cnp, 5);
             }
             
-            setTargetedNews(news);
+            // Ensure news is always an array
+            setTargetedNews(Array.isArray(news) ? news : []);
         } catch (error) {
             console.error('Error loading targeted news:', error);
+            setTargetedNews([]);
         } finally {
             setLoading(false);
         }

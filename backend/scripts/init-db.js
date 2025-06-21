@@ -1,7 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const pool = require('../config/database');
-const fakeNewsService = require('../services/fakeNewsGenerator');
+const fakeNewsGenerator = require('../services/fakeNewsGenerator');
 
 async function initializeDatabase() {
     try {
@@ -41,15 +41,15 @@ async function initializeDatabase() {
             }
         }
         
-        // Generate initial fake news and social media content
-        console.log('Generating initial fake news and social media content...');
-        await fakeNewsService.populateInitialNews();
+        // Generate initial fake news
+        console.log('Generating initial fake news...');
+        await fakeNewsGenerator.populateInitialNews();
         
-        // Generate initial user preferences and targeted news
-        console.log('Generating initial user preferences and targeted news...');
-        await fakeNewsService.generateTargetedNewsForAllUsers();
+        // Generate targeted news for all users with varied sentiments
+        console.log('Generating targeted news for all users...');
+        await fakeNewsGenerator.generateTargetedNewsForAllUsers();
         
-        console.log('Database initialized successfully!');
+        console.log('Database initialization completed successfully!');
         
     } catch (error) {
         console.error('Error initializing database:', error);

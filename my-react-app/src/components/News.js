@@ -63,7 +63,7 @@ const News = () => {
         });
     };
 
-    const filteredNews = news.filter(article => {
+    const filteredNews = (news || []).filter(article => {
         const matchesFilter = filter === 'all' || article.sentiment === filter;
         const matchesCandidate = selectedCandidate === 'all' || article.candidate_id === parseInt(selectedCandidate);
         return matchesFilter && matchesCandidate;
