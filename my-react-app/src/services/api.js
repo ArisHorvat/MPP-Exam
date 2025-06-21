@@ -137,12 +137,34 @@ class ApiService {
         return response.json();
     }
 
+    async userVoteFirstRound(userCnp, candidateId) {
+        const response = await fetch(`${API_BASE_URL}/api/election/user-vote-first-round`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ userCnp, candidateId }),
+        });
+        return response.json();
+    }
+
     async simulateSecondRound() {
         const response = await fetch(`${API_BASE_URL}/api/election/simulate-second-round`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
+        });
+        return response.json();
+    }
+
+    async userVoteSecondRound(userCnp, candidateId) {
+        const response = await fetch(`${API_BASE_URL}/api/election/user-vote-second-round`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ userCnp, candidateId }),
         });
         return response.json();
     }

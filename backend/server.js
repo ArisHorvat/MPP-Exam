@@ -358,7 +358,7 @@ app.post('/api/news/populate', async (req, res) => {
 // Election Simulation endpoints
 app.post('/api/election/simulate-first-round', async (req, res) => {
     try {
-        const results = await electionSimulator.simulateFirstRound();
+        const results = await electionSimulator.simulateAutomaticFirstRound();
         res.json(results);
     } catch (error) {
         console.error('Error simulating first round:', error);
@@ -366,13 +366,45 @@ app.post('/api/election/simulate-first-round', async (req, res) => {
     }
 });
 
+app.post('/api/election/user-vote-first-round', async (req, res) => {
+    try {
+        const { userCnp, candidateId } = req.body;
+        
+        if (!userCnp || !candidateId) {
+            return res.status(400).json({ error: 'User CNP and candidate ID are required' });
+        }
+        
+        const results = await electionSimulator.handleUserFirstRoundVote(userCnp, candidateId);
+        res.json(results);
+    } catch (error) {
+        console.error('Error handling user first round vote:', error);
+        res.status(500).json({ error: error.message || 'Failed to process your vote. Please try again.' });
+    }
+});
+
 app.post('/api/election/simulate-second-round', async (req, res) => {
     try {
-        const results = await electionSimulator.simulateSecondRound();
+        const results = await electionSimulator.simulateAutomaticSecondRound();
         res.json(results);
     } catch (error) {
         console.error('Error simulating second round:', error);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/election/user-vote-second-round', async (req, res) => {
+    try {
+        const { userCnp, candidateId } = req.body;
+        
+        if (!userCnp || !candidateId) {
+            return res.status(400).json({ error: 'User CNP and candidate ID are required' });
+        }
+        
+        const results = await electionSimulator.handleUserSecondRoundVote(userCnp, candidateId);
+        res.json(results);
+    } catch (error) {
+        console.error('Error handling user second round vote:', error);
+        res.status(500).json({ error: error.message || 'Failed to process your vote. Please try again.' });
     }
 });
 

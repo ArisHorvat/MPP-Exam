@@ -2,17 +2,17 @@ const pool = require('../config/database');
 
 class ElectionSimulator {
     constructor() {
-        this.voterCount = 100;
+        this.automaticVoterCount = 100;
         this.topCandidatesForSecondRound = 2;
     }
 
     // Generate random voters for simulation
     generateRandomVoters() {
         const voters = [];
-        for (let i = 1; i <= this.voterCount; i++) {
+        for (let i = 1; i <= this.automaticVoterCount; i++) {
             const voter = {
                 id: i,
-                name: `Voter ${i}`,
+                name: `Auto Voter ${i}`,
                 cnp: this.generateRandomCNP()
             };
             voters.push(voter);
@@ -25,10 +25,10 @@ class ElectionSimulator {
         return Math.floor(10000 + Math.random() * 90000).toString();
     }
 
-    // Simulate first round voting
-    async simulateFirstRound() {
+    // Simulate automatic first round voting (100 voters)
+    async simulateAutomaticFirstRound() {
         try {
-            console.log('Starting first round simulation...');
+            console.log('Starting automatic first round simulation...');
             
             // Get all candidates
             const candidatesResult = await pool.query('SELECT * FROM candidates');
@@ -71,7 +71,7 @@ class ElectionSimulator {
             // Store first round results
             await this.storeFirstRoundResults(results, topCandidates);
             
-            console.log('First round simulation completed!');
+            console.log('Automatic first round simulation completed!');
             console.log('Top 2 candidates for second round:');
             topCandidates.forEach((candidate, index) => {
                 console.log(`${index + 1}. ${candidate.candidate_name} (${candidate.candidate_party}) - ${candidate.votes} votes`);
@@ -80,19 +80,66 @@ class ElectionSimulator {
             return {
                 firstRoundResults: results,
                 topCandidates: topCandidates,
-                totalVoters: this.voterCount
+                totalAutomaticVoters: this.automaticVoterCount,
+                waitingForUserVote: true
             };
 
         } catch (error) {
-            console.error('Error simulating first round:', error);
+            console.error('Error simulating automatic first round:', error);
             throw error;
         }
     }
 
-    // Simulate second round voting
-    async simulateSecondRound() {
+    // Handle user vote for first round (101st vote)
+    async handleUserFirstRoundVote(userCnp, candidateId) {
         try {
-            console.log('Starting second round simulation...');
+            console.log(`Processing user vote: CNP=${userCnp}, CandidateID=${candidateId}`);
+            
+            // Get candidate info
+            const candidateResult = await pool.query('SELECT * FROM candidates WHERE id = $1', [candidateId]);
+            if (candidateResult.rows.length === 0) {
+                throw new Error('Candidate not found');
+            }
+            const candidate = candidateResult.rows[0];
+            console.log(`Found candidate: ${candidate.name} (${candidate.party})`);
+
+            // Record user vote
+            await this.recordUserVote(userCnp, candidate, false);
+            console.log(`User vote recorded successfully`);
+
+            // Get updated first round results
+            const updatedResults = await this.getUpdatedFirstRoundResults();
+            console.log(`Updated results: ${updatedResults.length} candidates`);
+            
+            // Get top 2 candidates for second round
+            const topCandidates = updatedResults.slice(0, 2);
+            console.log(`Top candidates for second round: ${topCandidates.map(c => c.candidate_name).join(', ')}`);
+            
+            // Store results
+            await this.storeFirstRoundResults(updatedResults, topCandidates);
+            console.log(`First round results stored successfully`);
+
+            return {
+                firstRoundResults: updatedResults,
+                topCandidates: topCandidates,
+                totalVoters: this.automaticVoterCount + 1,
+                userVote: {
+                    candidate_id: candidate.id,
+                    candidate_name: candidate.name,
+                    candidate_party: candidate.party
+                }
+            };
+
+        } catch (error) {
+            console.error('Error handling user first round vote:', error);
+            throw error;
+        }
+    }
+
+    // Simulate automatic second round voting (100 voters)
+    async simulateAutomaticSecondRound() {
+        try {
+            console.log('Starting automatic second round simulation...');
             
             // Get top 2 candidates from first round
             const topCandidatesResult = await pool.query(`
@@ -137,18 +184,63 @@ class ElectionSimulator {
             // Store second round results
             await this.storeSecondRoundResults(results);
             
-            const winner = results[0];
-            console.log('Second round simulation completed!');
-            console.log(`Winner: ${winner.candidate_name} (${winner.candidate_party}) with ${winner.votes} votes`);
+            console.log('Automatic second round simulation completed!');
+            console.log('Waiting for user vote to determine final winner...');
 
             return {
                 secondRoundResults: results,
-                winner: winner,
-                totalVoters: this.voterCount
+                totalAutomaticVoters: this.automaticVoterCount,
+                waitingForUserVote: true
             };
 
         } catch (error) {
-            console.error('Error simulating second round:', error);
+            console.error('Error simulating automatic second round:', error);
+            throw error;
+        }
+    }
+
+    // Handle user vote for second round (101st vote)
+    async handleUserSecondRoundVote(userCnp, candidateId) {
+        try {
+            console.log(`Processing user second round vote: CNP=${userCnp}, CandidateID=${candidateId}`);
+            
+            // Get candidate info
+            const candidateResult = await pool.query('SELECT * FROM candidates WHERE id = $1', [candidateId]);
+            if (candidateResult.rows.length === 0) {
+                throw new Error('Candidate not found');
+            }
+            const candidate = candidateResult.rows[0];
+            console.log(`Found candidate: ${candidate.name} (${candidate.party})`);
+
+            // Record user vote
+            await this.recordUserVote(userCnp, candidate, true);
+            console.log(`User second round vote recorded successfully`);
+
+            // Get updated second round results
+            const updatedResults = await this.getUpdatedSecondRoundResults();
+            console.log(`Updated second round results: ${updatedResults.length} candidates`);
+            
+            // Update stored results
+            await this.storeSecondRoundResults(updatedResults);
+            console.log(`Second round results stored successfully`);
+
+            const winner = updatedResults[0];
+            console.log('Second round completed with user vote!');
+            console.log(`Winner: ${winner.candidate_name} (${winner.candidate_party}) with ${winner.votes} votes`);
+
+            return {
+                secondRoundResults: updatedResults,
+                winner: winner,
+                totalVoters: this.automaticVoterCount + 1,
+                userVote: {
+                    candidate_id: candidate.id,
+                    candidate_name: candidate.name,
+                    candidate_party: candidate.party
+                }
+            };
+
+        } catch (error) {
+            console.error('Error handling user second round vote:', error);
             throw error;
         }
     }
@@ -163,16 +255,93 @@ class ElectionSimulator {
                 ON CONFLICT (cnp) DO NOTHING
             `, [voter.name, voter.cnp]);
 
-            // Record the vote
-            await pool.query(`
-                INSERT INTO votes (cnp, candidate_id, candidate_name, candidate_party) 
-                VALUES ($1, $2, $3, $4)
-                ON CONFLICT (cnp) DO NOTHING
-            `, [voter.cnp, candidate.id, candidate.name, candidate.party]);
+            // Check if this voter has already voted
+            const existingVote = await pool.query('SELECT * FROM votes WHERE cnp = $1', [voter.cnp]);
+            
+            if (existingVote.rows.length > 0) {
+                // Voter has already voted, update their vote for the new round
+                await pool.query(`
+                    UPDATE votes 
+                    SET candidate_id = $1, candidate_name = $2, candidate_party = $3, voted_at = CURRENT_TIMESTAMP
+                    WHERE cnp = $4
+                `, [candidate.id, candidate.name, candidate.party, voter.cnp]);
+            } else {
+                // Voter hasn't voted yet, insert new vote
+                await pool.query(`
+                    INSERT INTO votes (cnp, candidate_id, candidate_name, candidate_party) 
+                    VALUES ($1, $2, $3, $4)
+                `, [voter.cnp, candidate.id, candidate.name, candidate.party]);
+            }
 
         } catch (error) {
             console.error('Error recording simulated vote:', error);
         }
+    }
+
+    // Record a user vote
+    async recordUserVote(userCnp, candidate, isSecondRound = false) {
+        try {
+            console.log(`Recording user vote: CNP=${userCnp}, Candidate=${candidate.name}, SecondRound=${isSecondRound}`);
+            
+            // Check if user has already voted
+            const existingVote = await pool.query('SELECT * FROM votes WHERE cnp = $1', [userCnp]);
+            
+            if (existingVote.rows.length > 0) {
+                console.log(`User has already voted, updating vote for ${isSecondRound ? 'second' : 'first'} round`);
+                // User has already voted, update their vote for the new round
+                await pool.query(`
+                    UPDATE votes 
+                    SET candidate_id = $1, candidate_name = $2, candidate_party = $3, voted_at = CURRENT_TIMESTAMP
+                    WHERE cnp = $4
+                `, [candidate.id, candidate.name, candidate.party, userCnp]);
+            } else {
+                console.log(`User hasn't voted yet, inserting new vote`);
+                // User hasn't voted yet, insert new vote
+                await pool.query(`
+                    INSERT INTO votes (cnp, candidate_id, candidate_name, candidate_party) 
+                    VALUES ($1, $2, $3, $4)
+                `, [userCnp, candidate.id, candidate.name, candidate.party]);
+            }
+            
+            console.log(`Vote recorded successfully`);
+
+        } catch (error) {
+            console.error('Error recording user vote:', error);
+            throw error;
+        }
+    }
+
+    // Get updated first round results after user vote
+    async getUpdatedFirstRoundResults() {
+        const result = await pool.query(`
+            SELECT 
+                c.id as candidate_id,
+                c.name as candidate_name,
+                c.party as candidate_party,
+                COUNT(v.id) as votes
+            FROM candidates c
+            LEFT JOIN votes v ON c.id = v.candidate_id
+            GROUP BY c.id, c.name, c.party
+            ORDER BY votes DESC
+        `);
+        return result.rows;
+    }
+
+    // Get updated second round results after user vote
+    async getUpdatedSecondRoundResults() {
+        const result = await pool.query(`
+            SELECT 
+                c.id as candidate_id,
+                c.name as candidate_name,
+                c.party as candidate_party,
+                COUNT(v.id) as votes
+            FROM candidates c
+            INNER JOIN second_round_candidates src ON c.id = src.candidate_id
+            LEFT JOIN votes v ON c.id = v.candidate_id
+            GROUP BY c.id, c.name, c.party
+            ORDER BY votes DESC
+        `);
+        return result.rows;
     }
 
     // Store first round results
@@ -252,7 +421,7 @@ class ElectionSimulator {
                 pool.query('DELETE FROM first_round_results'),
                 pool.query('DELETE FROM second_round_results'),
                 pool.query('DELETE FROM second_round_candidates'),
-                pool.query('DELETE FROM votes WHERE cnp LIKE \'Voter%\'')
+                pool.query('DELETE FROM votes WHERE cnp LIKE \'Auto Voter%\'')
             ]);
             
             console.log('Election simulation reset successfully');
