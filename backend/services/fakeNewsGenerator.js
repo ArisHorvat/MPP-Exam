@@ -1,0 +1,320 @@
+const pool = require('../config/database');
+
+// Fake news sources
+const newsSources = [
+    'The Daily Chronicle',
+    'Metro Times',
+    'National Observer',
+    'City Press',
+    'The Evening Standard',
+    'Morning Report',
+    'Political Insider',
+    'Community Voice',
+    'State Gazette',
+    'The Independent'
+];
+
+// News categories
+const newsCategories = [
+    'Campaign',
+    'Policy',
+    'Scandal',
+    'Endorsement',
+    'Fundraising',
+    'Debate',
+    'Poll Results',
+    'Personal Life',
+    'Controversy',
+    'Achievement'
+];
+
+// Positive news templates
+const positiveNewsTemplates = [
+    {
+        title: "{candidate} Receives Major Endorsement from {organization}",
+        content: "In a significant boost to their campaign, {candidate} has received a major endorsement from {organization}. The endorsement comes as {candidate} continues to gain momentum in the polls, with recent surveys showing growing support among {demographic}. 'This endorsement represents the trust and confidence that {organization} has in our vision for the future,' said {candidate} during a press conference. Political analysts suggest this could be a game-changer in the race."
+    },
+    {
+        title: "{candidate} Proposes Revolutionary {policy} Plan",
+        content: "Breaking new ground in political discourse, {candidate} has unveiled a comprehensive {policy} plan that experts are calling 'revolutionary' and 'forward-thinking.' The plan, which includes {details}, has already garnered support from {experts}. 'This is exactly the kind of innovative thinking our community needs,' said {supporter}. The proposal has sparked widespread discussion across social media platforms."
+    },
+    {
+        title: "Poll Shows {candidate} Leading in {region}",
+        content: "Latest polling data reveals that {candidate} has taken a commanding lead in {region}, with support from {percentage}% of likely voters. The surge in popularity comes after {candidate}'s recent {event}, which resonated strongly with voters. 'The numbers speak for themselves,' said campaign manager {manager}. 'People are responding to {candidate}'s message of {message}.'"
+    },
+    {
+        title: "{candidate} Raises Record-Breaking {amount} in Campaign Funds",
+        content: "In an impressive display of grassroots support, {candidate} has raised {amount} in campaign funds, setting a new record for {election_type}. The funds, primarily from small donors, demonstrate widespread community support. 'This isn't about big money interests,' said {candidate}. 'This is about people power and the belief that we can create positive change together.'"
+    }
+];
+
+// Negative news templates
+const negativeNewsTemplates = [
+    {
+        title: "Controversy Surrounds {candidate}'s {issue}",
+        content: "Questions are being raised about {candidate}'s position on {issue}, with critics pointing to {specific_concern}. The controversy has sparked heated debate on social media, with supporters defending {candidate}'s record while opponents call for clarification. 'This is a serious matter that deserves attention,' said {critic}. {candidate} has yet to respond to the allegations."
+    },
+    {
+        title: "{candidate} Faces Backlash Over {statement}",
+        content: "A recent statement by {candidate} regarding {topic} has drawn sharp criticism from {groups}. The comments, made during {event}, have been described as 'insensitive' and 'out of touch' by political opponents. Social media has been flooded with reactions, with many calling for {candidate} to apologize. The campaign has issued a statement defending the remarks."
+    },
+    {
+        title: "Poll Numbers Drop for {candidate} After {incident}",
+        content: "Recent polling shows a significant drop in support for {candidate} following {incident}. The {percentage}% decline has political analysts questioning the campaign's strategy. 'This is a wake-up call,' said {analyst}. 'Voters are clearly concerned about {issue}.' The campaign has vowed to address the concerns and regain momentum."
+    }
+];
+
+// Neutral news templates
+const neutralNewsTemplates = [
+    {
+        title: "{candidate} Announces Campaign Schedule for {period}",
+        content: "The {candidate} campaign has released its official schedule for {period}, including stops in {locations}. The tour will focus on {topics} and include several public appearances. Campaign officials say the schedule reflects {candidate}'s commitment to meeting voters face-to-face and discussing the issues that matter most to them."
+    },
+    {
+        title: "{candidate} Participates in {event}",
+        content: "Yesterday, {candidate} participated in {event}, where they {actions}. The event, attended by {attendees}, provided an opportunity for {candidate} to connect with voters and discuss their platform. 'It's important to be present in our communities,' said {candidate}. 'These events help me understand the real concerns of the people I hope to represent.'"
+    },
+    {
+        title: "New Campaign Ad Released by {candidate}",
+        content: "The {candidate} campaign has released a new television advertisement titled '{ad_title}.' The {duration}-second spot focuses on {theme} and features {features}. The ad will air on {networks} throughout {region}. Campaign officials say the advertisement effectively communicates {candidate}'s vision for the future."
+    }
+];
+
+// Social media content templates
+const socialMediaTemplates = [
+    {
+        platform: 'twitter',
+        content: "Just wrapped up an amazing town hall in {location}! The energy and passion of our community is incredible. {hashtags} #Election2024 #ChangeWeNeed"
+    },
+    {
+        platform: 'facebook',
+        content: "Today I had the privilege of meeting with {group} to discuss {issue}. Their insights and concerns will help shape my policy proposals. Together, we can build a better future for all of us. #CommunityFirst #RealSolutions"
+    },
+    {
+        platform: 'instagram',
+        content: "Behind the scenes: preparing for tonight's debate. The issues we're discussing tonight affect every family in our community. Ready to share my vision for {topic}! 📸 #CampaignLife #DebateNight"
+    },
+    {
+        platform: 'linkedin',
+        content: "Excited to share my comprehensive plan for {policy_area}. With {years} years of experience in {field}, I understand the challenges we face and have practical solutions to address them. Let's work together to create positive change. #Leadership #PolicyMatters"
+    }
+];
+
+// Helper function to get random item from array
+function getRandomItem(array) {
+    return array[Math.floor(Math.random() * array.length)];
+}
+
+// Helper function to generate random number
+function getRandomNumber(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// Helper function to replace placeholders in templates
+function replacePlaceholders(template, candidate) {
+    const replacements = {
+        '{candidate}': candidate.name,
+        '{organization}': getRandomItem(['Local Business Association', 'Teachers Union', 'Environmental Coalition', 'Veterans Group', 'Healthcare Workers Union']),
+        '{demographic}': getRandomItem(['young voters', 'seniors', 'working families', 'small business owners', 'students']),
+        '{policy}': getRandomItem(['Healthcare Reform', 'Education Funding', 'Economic Development', 'Environmental Protection', 'Public Safety']),
+        '{details}': getRandomItem(['increased funding for public schools', 'tax incentives for small businesses', 'renewable energy initiatives', 'affordable housing programs']),
+        '{experts}': getRandomItem(['leading economists', 'policy experts', 'community leaders', 'business owners']),
+        '{supporter}': getRandomItem(['local resident Maria Johnson', 'business owner Tom Smith', 'community activist Sarah Wilson']),
+        '{region}': getRandomItem(['downtown district', 'suburban areas', 'rural communities', 'coastal regions']),
+        '{percentage}': getRandomNumber(45, 65),
+        '{event}': getRandomItem(['town hall meeting', 'policy announcement', 'community service event', 'debate performance']),
+        '{message}': getRandomItem(['hope and change', 'unity and progress', 'community values', 'economic opportunity']),
+        '{amount}': getRandomItem(['$250,000', '$500,000', '$750,000', '$1 million']),
+        '{election_type}': getRandomItem(['local elections', 'state primaries', 'general elections']),
+        '{issue}': getRandomItem(['tax policy', 'environmental regulations', 'education funding', 'healthcare access']),
+        '{specific_concern}': getRandomItem(['previous voting record', 'campaign contributions', 'personal finances', 'policy inconsistencies']),
+        '{critic}': getRandomItem(['political analyst Dr. Johnson', 'opponent campaign manager', 'local activist group']),
+        '{topic}': getRandomItem(['immigration policy', 'economic development', 'social programs', 'foreign relations']),
+        '{groups}': getRandomItem(['advocacy groups', 'community organizations', 'political opponents']),
+        '{incident}': getRandomItem(['controversial statement', 'policy flip-flop', 'campaign finance issue']),
+        '{analyst}': getRandomItem(['political strategist', 'polling expert', 'campaign consultant']),
+        '{period}': getRandomItem(['next week', 'the coming month', 'the final stretch']),
+        '{locations}': getRandomItem(['downtown, suburbs, and rural areas', 'all major districts', 'key swing regions']),
+        '{topics}': getRandomItem(['economic development', 'education and healthcare', 'community safety and infrastructure']),
+        '{actions}': getRandomItem(['addressed concerns about local issues', 'discussed policy proposals', 'listened to community feedback']),
+        '{attendees}': getRandomItem(['over 200 local residents', 'community leaders and activists', 'business owners and workers']),
+        '{ad_title}': getRandomItem(['Building Our Future', 'Community First', 'Real Solutions', 'Working Together']),
+        '{duration}': getRandomNumber(30, 60),
+        '{theme}': getRandomItem(['community values', 'economic opportunity', 'public safety', 'education excellence']),
+        '{features}': getRandomItem(['local residents sharing their stories', 'candidate discussing key policies', 'community landmarks and businesses']),
+        '{networks}': getRandomItem(['major local networks', 'cable news channels', 'streaming platforms']),
+        '{location}': getRandomItem(['Springfield', 'Riverside', 'Downtown', 'Westside', 'North District']),
+        '{hashtags}': getRandomItem(['#CommunityFirst', '#RealChange', '#WorkingTogether', '#FutureForward']),
+        '{group}': getRandomItem(['local business owners', 'teachers and parents', 'healthcare workers', 'senior citizens']),
+        '{years}': getRandomNumber(5, 25),
+        '{field}': getRandomItem(['public service', 'business management', 'community development', 'policy analysis']),
+        '{policy_area}': getRandomItem(['economic development', 'education reform', 'environmental protection', 'public safety'])
+    };
+
+    let result = template;
+    for (const [placeholder, replacement] of Object.entries(replacements)) {
+        result = result.replace(new RegExp(placeholder, 'g'), replacement);
+    }
+    return result;
+}
+
+// Generate fake news article
+function generateNewsArticle(candidate) {
+    const sentiment = getRandomItem(['positive', 'negative', 'neutral']);
+    let template;
+    
+    switch (sentiment) {
+        case 'positive':
+            template = getRandomItem(positiveNewsTemplates);
+            break;
+        case 'negative':
+            template = getRandomItem(negativeNewsTemplates);
+            break;
+        default:
+            template = getRandomItem(neutralNewsTemplates);
+    }
+
+    return {
+        candidate_id: candidate.id,
+        title: replacePlaceholders(template.title, candidate),
+        content: replacePlaceholders(template.content, candidate),
+        source: getRandomItem(newsSources),
+        sentiment: sentiment,
+        category: getRandomItem(newsCategories)
+    };
+}
+
+// Generate social media post
+function generateSocialPost(candidate) {
+    const template = getRandomItem(socialMediaTemplates);
+    return {
+        candidate_id: candidate.id,
+        platform: template.platform,
+        content: replacePlaceholders(template.content, candidate),
+        likes: getRandomNumber(50, 5000),
+        shares: getRandomNumber(10, 500),
+        comments: getRandomNumber(5, 200)
+    };
+}
+
+// Database service functions
+const fakeNewsService = {
+    async generateNewsForCandidate(candidateId) {
+        try {
+            const candidateResult = await pool.query('SELECT * FROM candidates WHERE id = $1', [candidateId]);
+            if (candidateResult.rows.length === 0) {
+                throw new Error('Candidate not found');
+            }
+            
+            const candidate = candidateResult.rows[0];
+            const newsArticle = generateNewsArticle(candidate);
+            
+            const result = await pool.query(`
+                INSERT INTO news (candidate_id, title, content, source, sentiment, category)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                RETURNING *
+            `, [newsArticle.candidate_id, newsArticle.title, newsArticle.content, newsArticle.source, newsArticle.sentiment, newsArticle.category]);
+            
+            return result.rows[0];
+        } catch (error) {
+            console.error('Error generating news:', error);
+            throw error;
+        }
+    },
+
+    async generateSocialPostForCandidate(candidateId) {
+        try {
+            const candidateResult = await pool.query('SELECT * FROM candidates WHERE id = $1', [candidateId]);
+            if (candidateResult.rows.length === 0) {
+                throw new Error('Candidate not found');
+            }
+            
+            const candidate = candidateResult.rows[0];
+            const socialPost = generateSocialPost(candidate);
+            
+            const result = await pool.query(`
+                INSERT INTO social_posts (candidate_id, platform, content, likes, shares, comments)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                RETURNING *
+            `, [socialPost.candidate_id, socialPost.platform, socialPost.content, socialPost.likes, socialPost.shares, socialPost.comments]);
+            
+            return result.rows[0];
+        } catch (error) {
+            console.error('Error generating social post:', error);
+            throw error;
+        }
+    },
+
+    async getNewsForCandidate(candidateId, limit = 10) {
+        try {
+            const result = await pool.query(`
+                SELECT * FROM news 
+                WHERE candidate_id = $1 
+                ORDER BY published_at DESC 
+                LIMIT $2
+            `, [candidateId, limit]);
+            return result.rows;
+        } catch (error) {
+            console.error('Error getting news:', error);
+            throw error;
+        }
+    },
+
+    async getSocialPostsForCandidate(candidateId, limit = 10) {
+        try {
+            const result = await pool.query(`
+                SELECT * FROM social_posts 
+                WHERE candidate_id = $1 
+                ORDER BY posted_at DESC 
+                LIMIT $2
+            `, [candidateId, limit]);
+            return result.rows;
+        } catch (error) {
+            console.error('Error getting social posts:', error);
+            throw error;
+        }
+    },
+
+    async getAllNews(limit = 50) {
+        try {
+            const result = await pool.query(`
+                SELECT n.*, c.name as candidate_name, c.party as candidate_party
+                FROM news n
+                JOIN candidates c ON n.candidate_id = c.id
+                ORDER BY n.published_at DESC 
+                LIMIT $1
+            `, [limit]);
+            return result.rows;
+        } catch (error) {
+            console.error('Error getting all news:', error);
+            throw error;
+        }
+    },
+
+    async populateInitialNews() {
+        try {
+            const candidates = await pool.query('SELECT * FROM candidates');
+            
+            for (const candidate of candidates.rows) {
+                // Generate 3-5 news articles per candidate
+                const newsCount = getRandomNumber(3, 5);
+                for (let i = 0; i < newsCount; i++) {
+                    await this.generateNewsForCandidate(candidate.id);
+                }
+                
+                // Generate 2-4 social media posts per candidate
+                const socialCount = getRandomNumber(2, 4);
+                for (let i = 0; i < socialCount; i++) {
+                    await this.generateSocialPostForCandidate(candidate.id);
+                }
+            }
+            
+            console.log('Initial news and social media content generated successfully');
+        } catch (error) {
+            console.error('Error populating initial news:', error);
+            throw error;
+        }
+    }
+};
+
+module.exports = fakeNewsService; 

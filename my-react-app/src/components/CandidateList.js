@@ -35,6 +35,14 @@ function CandidateList({ candidates, onSaveCandidate, onDeleteCandidate, user, o
         navigate('/voting');
     };
 
+    const handleNews = () => {
+        navigate('/news');
+    };
+
+    const handleSocial = () => {
+        navigate('/social');
+    };
+
     const handleLogin = () => {
         navigate('/login');
     };
@@ -72,6 +80,12 @@ function CandidateList({ candidates, onSaveCandidate, onDeleteCandidate, user, o
                             🔐 Login to Vote
                         </button>
                     )}
+                    <button onClick={handleNews} className="news-btn">
+                        📰 News
+                    </button>
+                    <button onClick={handleSocial} className="social-btn">
+                        📱 Social Media
+                    </button>
                     <button onClick={handleViewChart} className="chart-btn">
                         📊 View Chart
                     </button>

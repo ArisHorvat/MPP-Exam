@@ -1,6 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const pool = require('../config/database');
+const fakeNewsService = require('../services/fakeNewsGenerator');
 
 async function initializeDatabase() {
     try {
@@ -13,11 +14,17 @@ async function initializeDatabase() {
         // Execute the schema
         await pool.query(schema);
         
-        console.log('Database initialized successfully!');
+        console.log('Database schema created successfully!');
         
         // Test the connection by getting candidates
         const result = await pool.query('SELECT COUNT(*) as count FROM candidates');
         console.log(`Found ${result.rows[0].count} candidates in database`);
+        
+        // Generate initial fake news and social media content
+        console.log('Generating initial fake news and social media content...');
+        await fakeNewsService.populateInitialNews();
+        
+        console.log('Database initialized successfully!');
         
     } catch (error) {
         console.error('Error initializing database:', error);

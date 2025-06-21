@@ -7,6 +7,8 @@ import PartyChart from './components/PartyChart';
 import Login from './components/Login';
 import Register from './components/Register';
 import Voting from './components/Voting';
+import News from './components/News';
+import SocialMedia from './components/SocialMedia';
 import apiService from './services/api';
 import './App.css';
 
@@ -195,6 +197,24 @@ function App() {
                         element={
                             <PartyChart 
                                 candidates={candidates}
+                                user={user}
+                                onLogout={handleLogout}
+                            />
+                        } 
+                    />
+                    <Route 
+                        path="/news" 
+                        element={
+                            <News 
+                                user={user}
+                                onLogout={handleLogout}
+                            />
+                        } 
+                    />
+                    <Route 
+                        path="/social" 
+                        element={
+                            <SocialMedia 
                                 user={user}
                                 onLogout={handleLogout}
                             />

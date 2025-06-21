@@ -6,6 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 
 const { candidateService, userService, voteService, statsService } = require('./services/database');
+const fakeNewsService = require('./services/fakeNewsGenerator');
 
 const app = express();
 const server = http.createServer(app);
@@ -281,6 +282,74 @@ app.get('/api/voting-results', async (req, res) => {
         res.json(results);
     } catch (error) {
         console.error('Error getting voting results:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Fake News API endpoints
+app.get('/api/news', async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 50;
+        const news = await fakeNewsService.getAllNews(limit);
+        res.json(news);
+    } catch (error) {
+        console.error('Error getting news:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.get('/api/news/candidate/:candidateId', async (req, res) => {
+    try {
+        const candidateId = parseInt(req.params.candidateId);
+        const limit = parseInt(req.query.limit) || 10;
+        const news = await fakeNewsService.getNewsForCandidate(candidateId, limit);
+        res.json(news);
+    } catch (error) {
+        console.error('Error getting candidate news:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.get('/api/social-posts/candidate/:candidateId', async (req, res) => {
+    try {
+        const candidateId = parseInt(req.params.candidateId);
+        const limit = parseInt(req.query.limit) || 10;
+        const posts = await fakeNewsService.getSocialPostsForCandidate(candidateId, limit);
+        res.json(posts);
+    } catch (error) {
+        console.error('Error getting candidate social posts:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/news/generate/:candidateId', async (req, res) => {
+    try {
+        const candidateId = parseInt(req.params.candidateId);
+        const newsArticle = await fakeNewsService.generateNewsForCandidate(candidateId);
+        res.json(newsArticle);
+    } catch (error) {
+        console.error('Error generating news:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/social/generate/:candidateId', async (req, res) => {
+    try {
+        const candidateId = parseInt(req.params.candidateId);
+        const socialPost = await fakeNewsService.generateSocialPostForCandidate(candidateId);
+        res.json(socialPost);
+    } catch (error) {
+        console.error('Error generating social post:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/news/populate', async (req, res) => {
+    try {
+        await fakeNewsService.populateInitialNews();
+        res.json({ message: 'Initial news and social media content generated successfully' });
+    } catch (error) {
+        console.error('Error populating news:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
