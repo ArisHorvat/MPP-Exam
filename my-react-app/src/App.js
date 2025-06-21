@@ -6,7 +6,6 @@ import CandidateForm from './components/CandidateForm';
 import PartyChart from './components/PartyChart';
 import Login from './components/Login';
 import Register from './components/Register';
-import Voting from './components/Voting';
 import News from './components/News';
 import SocialMedia from './components/SocialMedia';
 import Election from './components/Election';
@@ -142,12 +141,6 @@ function App() {
                     />
                     
                     {/* Protected routes */}
-                    <Route 
-                        path="/voting" 
-                        element={
-                            user ? <Voting user={user} /> : <Navigate to="/login" replace />
-                        } 
-                    />
                     <Route 
                         path="/" 
                         element={

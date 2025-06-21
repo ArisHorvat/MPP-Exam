@@ -51,54 +51,16 @@ const Election = ({ user }) => {
                 firstRound: results.firstRoundResults,
                 topCandidates: results.topCandidates
             }));
-            setSimulationStatus('first-round-voting');
-            setShowVotingInterface(true);
-            alert('100 automatic votes have been cast! Now it\'s your turn to vote and complete the first round.');
-        } catch (error) {
-            console.error('Error simulating first round:', error);
-            alert('Error simulating first round. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleUserVoteFirstRound = async () => {
-        if (!selectedCandidate) {
-            alert('Please select a candidate to vote for.');
-            return;
-        }
-
-        if (!user || !user.cnp) {
-            alert('Please log in to vote.');
-            return;
-        }
-
-        try {
-            setLoading(true);
-            const results = await apiService.userVoteFirstRound(user.cnp, selectedCandidate);
-            
-            if (results.error) {
-                alert(`Error: ${results.error}`);
-                return;
-            }
-            
-            setElectionResults(prev => ({
-                ...prev,
-                firstRound: results.firstRoundResults,
-                topCandidates: results.topCandidates
-            }));
             setSimulationStatus('second-round-auto');
-            setShowVotingInterface(false);
-            setSelectedCandidate(null);
-            alert(`You voted for ${results.userVote.candidate_name}! First round completed. Starting second round simulation...`);
+            alert('First round completed! 90 automatic votes + your auto-vote based on news preferences have been cast. Top 2 candidates advance to second round.');
             
             // Automatically start second round
             setTimeout(() => {
                 handleSimulateSecondRound();
             }, 1000);
         } catch (error) {
-            console.error('Error voting in first round:', error);
-            alert(`Error casting your vote: ${error.message || 'Please try again.'}`);
+            console.error('Error simulating first round:', error);
+            alert('Error simulating first round. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -114,7 +76,7 @@ const Election = ({ user }) => {
             }));
             setSimulationStatus('second-round-voting');
             setShowVotingInterface(true);
-            alert('100 automatic votes have been cast in the second round! Now cast your vote to determine the winner.');
+            alert('90 automatic votes have been cast in the second round! Now cast your vote to determine the winner.');
         } catch (error) {
             console.error('Error simulating second round:', error);
             alert('Error simulating second round. Please try again.');
@@ -194,7 +156,7 @@ const Election = ({ user }) => {
         switch (status) {
             case 'not-started': return 'Not Started';
             case 'first-round-auto': return 'First Round - Automatic Voting';
-            case 'first-round-voting': return 'First Round - Your Turn to Vote!';
+            case 'first-round-voting': return 'First Round - Automatic (No Manual Voting)';
             case 'second-round-auto': return 'Second Round - Automatic Voting';
             case 'second-round-voting': return 'Second Round - Your Turn to Vote!';
             case 'completed': return 'Election Completed';
@@ -203,9 +165,7 @@ const Election = ({ user }) => {
     };
 
     const getVotingCandidates = () => {
-        if (simulationStatus === 'first-round-voting') {
-            return candidates;
-        } else if (simulationStatus === 'second-round-voting' && electionResults?.topCandidates) {
+        if (simulationStatus === 'second-round-voting' && electionResults?.topCandidates) {
             return electionResults.topCandidates.map(candidate => ({
                 id: candidate.candidate_id,
                 name: candidate.candidate_name,
@@ -219,7 +179,8 @@ const Election = ({ user }) => {
         <div className="election-container">
             <div className="election-header">
                 <h1>🗳️ Interactive Election Simulation</h1>
-                <p>100 automatic voters + your vote = 101 total votes</p>
+                <p>First Round: 90 automatic votes + your auto-vote based on news preferences</p>
+                <p>Second Round: 90 automatic votes + your manual vote for the top 2 candidates</p>
                 <div className="election-status">
                     <span 
                         className="status-badge"
@@ -238,7 +199,7 @@ const Election = ({ user }) => {
                             disabled={loading}
                             className="simulate-btn first-round-btn"
                         >
-                            {loading ? 'Simulating...' : '🎯 Start First Round (100 Auto Votes)'}
+                            {loading ? 'Simulating...' : '🎯 Start First Round (90 Auto + 1 Auto User Vote)'}
                         </button>
                     )}
                     
@@ -256,8 +217,8 @@ const Election = ({ user }) => {
             {showVotingInterface && (
                 <div className="voting-interface">
                     <div className="voting-header">
-                        <h2>🗳️ Cast Your Vote</h2>
-                        <p>You are voter #101 - your vote will complete this round!</p>
+                        <h2>🗳️ Cast Your Vote for Second Round</h2>
+                        <p>Choose between the top 2 candidates from the first round!</p>
                     </div>
                     
                     <div className="candidates-grid">
@@ -278,7 +239,7 @@ const Election = ({ user }) => {
                     
                     <div className="voting-actions">
                         <button 
-                            onClick={simulationStatus === 'first-round-voting' ? handleUserVoteFirstRound : handleUserVoteSecondRound}
+                            onClick={handleUserVoteSecondRound}
                             disabled={!selectedCandidate || loading}
                             className="vote-btn"
                         >

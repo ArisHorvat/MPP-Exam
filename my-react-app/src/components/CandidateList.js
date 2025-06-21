@@ -48,10 +48,6 @@ function CandidateList({ candidates, onSaveCandidate, onDeleteCandidate, user, o
         navigate('/chart');
     };
 
-    const handleVoting = () => {
-        navigate('/voting');
-    };
-
     const handleNews = () => {
         navigate('/news');
     };
@@ -117,9 +113,6 @@ function CandidateList({ candidates, onSaveCandidate, onDeleteCandidate, user, o
                             </button>
                             <button onClick={handleShowSecondRoundNews} className="second-round-news-btn">
                                 🏆 Second Round
-                            </button>
-                            <button onClick={handleVoting} className="voting-btn">
-                                🗳️ Vote Now
                             </button>
                         </>
                     ) : (

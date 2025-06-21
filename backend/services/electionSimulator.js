@@ -55,7 +55,7 @@ class ElectionSimulator {
         return cnp;
     }
 
-    // Simulate automatic first round voting (100 voters)
+    // Simulate automatic first round voting (90 voters + 1 auto user vote)
     async simulateAutomaticFirstRound() {
         try {
             console.log('Starting automatic first round simulation...');
@@ -86,7 +86,7 @@ class ElectionSimulator {
                 };
             });
 
-            // Simulate preference-based voting
+            // Simulate preference-based voting for automatic voters
             for (const voter of voters) {
                 // Create user preferences for this voter
                 await this.createVoterPreferences(voter, candidates);
@@ -133,11 +133,30 @@ class ElectionSimulator {
                 await this.recordSimulatedVote(voter, bestCandidate);
             }
 
+            // Auto-vote for the first registered user based on news preferences
+            const userResult = await pool.query(`
+                SELECT cnp, name FROM users 
+                WHERE name NOT LIKE 'Auto Voter %' 
+                ORDER BY id ASC 
+                LIMIT 1
+            `);
+            
+            if (userResult.rows.length > 0) {
+                const user = userResult.rows[0];
+                console.log(`Auto-voting for user ${user.name} (${user.cnp}) based on news preferences...`);
+                
+                try {
+                    const autoVoteResult = await this.autoVoteBasedOnNews(user.cnp);
+                    voteResults[autoVoteResult.candidate_id].votes++;
+                    console.log(`User ${user.name} auto-voted for ${autoVoteResult.candidate_name} - ${autoVoteResult.reason}`);
+                } catch (voteError) {
+                    console.log(`No news preferences found for user ${user.name}, skipping auto-vote`);
+                }
+            }
+
             // Verify vote count
             const totalVotes = await this.verifyVoteCount();
-            if (totalVotes !== this.automaticVoterCount) {
-                console.warn(`Warning: Expected ${this.automaticVoterCount} votes, but found ${totalVotes}`);
-            }
+            console.log(`Total votes after first round: ${totalVotes}`);
 
             // Convert to array and sort by votes
             const results = Object.values(voteResults).sort((a, b) => b.votes - a.votes);
@@ -158,7 +177,8 @@ class ElectionSimulator {
                 firstRoundResults: results,
                 topCandidates: topCandidates,
                 totalAutomaticVoters: this.automaticVoterCount,
-                waitingForUserVote: true
+                totalVotes: totalVotes,
+                waitingForSecondRound: true
             };
 
         } catch (error) {

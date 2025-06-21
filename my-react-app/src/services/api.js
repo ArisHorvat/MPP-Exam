@@ -206,17 +206,6 @@ class ApiService {
         return response.json();
     }
 
-    async userVoteFirstRound(userCnp, candidateId) {
-        const response = await fetch(`${API_BASE_URL}/api/election/user-vote-first-round`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ userCnp, candidateId }),
-        });
-        return response.json();
-    }
-
     async autoVoteBasedOnNews(userCnp) {
         const response = await fetch(`${API_BASE_URL}/api/election/auto-vote-news`, {
             method: 'POST',
