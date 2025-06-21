@@ -2,7 +2,7 @@ const pool = require('../config/database');
 
 class ElectionSimulator {
     constructor() {
-        this.automaticVoterCount = 100;
+        this.automaticVoterCount = 90;
         this.topCandidatesForSecondRound = 2;
         this.usedCNPs = new Set(); // Track used CNPs to prevent duplicates
         this.currentElectionId = null; // Track current election session

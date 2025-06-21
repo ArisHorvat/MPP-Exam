@@ -343,14 +343,14 @@ class FakeNewsGenerator {
             const candidates = await pool.query('SELECT * FROM candidates');
             
             for (const candidate of candidates.rows) {
-                // Generate 3-5 news articles per candidate
-                const newsCount = this.getRandomNumber(3, 5);
+                // Generate 2-3 news articles per candidate (reduced from 3-5)
+                const newsCount = this.getRandomNumber(2, 3);
                 for (let i = 0; i < newsCount; i++) {
                     await this.generateNewsForCandidate(candidate.id);
                 }
                 
-                // Generate 2-4 social media posts per candidate
-                const socialCount = this.getRandomNumber(2, 4);
+                // Generate 1-2 social media posts per candidate (reduced from 2-4)
+                const socialCount = this.getRandomNumber(1, 2);
                 for (let i = 0; i < socialCount; i++) {
                     await this.generateSocialPostForCandidate(candidate.id);
                 }
@@ -629,8 +629,8 @@ class FakeNewsGenerator {
                 }
                 
                 for (const candidate of candidatesResult.rows) {
-                    // Generate 1-3 news articles per candidate per user with varied sentiments
-                    const articleCount = this.getRandomNumber(1, 3);
+                    // Generate 1-2 news articles per candidate per user with varied sentiments (reduced from 1-3)
+                    const articleCount = this.getRandomNumber(1, 2);
                     
                     for (let i = 0; i < articleCount; i++) {
                         // For variety, sometimes override the user's preference with a different sentiment

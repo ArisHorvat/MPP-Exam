@@ -25,7 +25,14 @@ async function initializeDatabase() {
         const testUsers = [
             { name: 'John Doe', cnp: '12345' },
             { name: 'Jane Smith', cnp: '67890' },
-            { name: 'Bob Johnson', cnp: '11111' }
+            { name: 'Bob Johnson', cnp: '11111' },
+            { name: 'Alice Brown', cnp: '22222' },
+            { name: 'Charlie Wilson', cnp: '33333' },
+            { name: 'Diana Davis', cnp: '44444' },
+            { name: 'Edward Miller', cnp: '55555' },
+            { name: 'Fiona Garcia', cnp: '66666' },
+            { name: 'George Martinez', cnp: '77777' },
+            { name: 'Helen Rodriguez', cnp: '88888' }
         ];
         
         for (const user of testUsers) {
