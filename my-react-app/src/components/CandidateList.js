@@ -4,12 +4,14 @@ import { Candidate } from '../domain/Candidate';
 import CandidateAvatar from './CandidateAvatar';
 import DeleteConfirmation from './DeleteConfirmation';
 import UserTargetedNews from './UserTargetedNews';
+import SecondRoundNews from './SecondRoundNews';
 import './CandidateList.css';
 
 function CandidateList({ candidates, onSaveCandidate, onDeleteCandidate, user, onLogout }) {
     const navigate = useNavigate();
     const [deleteCandidate, setDeleteCandidate] = useState(null);
     const [showTargetedNews, setShowTargetedNews] = useState(false);
+    const [showSecondRoundNews, setShowSecondRoundNews] = useState(false);
     const [selectedCandidateId, setSelectedCandidateId] = useState(null);
 
     // Show targeted news when user first visits the page
@@ -76,6 +78,14 @@ function CandidateList({ candidates, onSaveCandidate, onDeleteCandidate, user, o
         setSelectedCandidateId(null);
     };
 
+    const handleShowSecondRoundNews = () => {
+        setShowSecondRoundNews(true);
+    };
+
+    const handleCloseSecondRoundNews = () => {
+        setShowSecondRoundNews(false);
+    };
+
     const confirmDelete = (candidateId) => {
         onDeleteCandidate(candidateId);
         setDeleteCandidate(null);
@@ -104,6 +114,9 @@ function CandidateList({ candidates, onSaveCandidate, onDeleteCandidate, user, o
                         <>
                             <button onClick={() => handleShowTargetedNews()} className="targeted-news-btn">
                                 🎯 My News
+                            </button>
+                            <button onClick={handleShowSecondRoundNews} className="second-round-news-btn">
+                                🏆 Second Round
                             </button>
                             <button onClick={handleVoting} className="voting-btn">
                                 🗳️ Vote Now
@@ -205,6 +218,13 @@ function CandidateList({ candidates, onSaveCandidate, onDeleteCandidate, user, o
                     user={user}
                     candidateId={selectedCandidateId}
                     onClose={handleCloseTargetedNews}
+                />
+            )}
+
+            {showSecondRoundNews && user && (
+                <SecondRoundNews
+                    user={user}
+                    onClose={handleCloseSecondRoundNews}
                 />
             )}
         </div>

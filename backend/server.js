@@ -668,6 +668,17 @@ app.post('/api/user-targeted-news/generate-all', async (req, res) => {
     }
 });
 
+app.delete('/api/user-targeted-news/clear/:userCnp', async (req, res) => {
+    try {
+        const userCnp = req.params.userCnp;
+        await fakeNewsService.clearUserTargetedNews(userCnp);
+        res.json({ message: 'User targeted news cleared successfully' });
+    } catch (error) {
+        console.error('Error clearing user targeted news:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {

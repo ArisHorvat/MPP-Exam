@@ -1,0 +1,327 @@
+.second-round-news-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.second-round-news-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.second-round-news-header h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.close-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.candidates-selection {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.candidates-selection h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 1.1rem;
+}
+
+.candidates-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.candidate-card {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.candidate-card:hover {
+    border-color: #667eea;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.candidate-card.selected {
+    border-color: #667eea;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.candidate-info h5 {
+    margin: 0 0 5px 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.candidate-party {
+    margin: 0 0 8px 0;
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.candidate-votes {
+    margin: 0;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.selection-indicator {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #4caf50;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.dynamic-news-section {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.news-header-section {
+    padding: 15px 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.news-header-section h4 {
+    margin: 0;
+    color: #333;
+    font-size: 1.1rem;
+}
+
+.news-loading {
+    color: #667eea;
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+.news-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.news-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.news-item {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.news-item:hover {
+    border-color: #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.news-item.unread {
+    border-left: 4px solid #667eea;
+    background: #f8f9ff;
+}
+
+.news-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.news-header h5 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+    flex: 1;
+    margin-right: 10px;
+}
+
+.sentiment-badge {
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    min-width: 30px;
+    text-align: center;
+}
+
+.news-meta {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 8px;
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.news-meta span {
+    background: #f1f3f4;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.news-preview {
+    color: #555;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.unread-indicator {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #ff4757;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.no-news {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
+/* Full article view */
+.second-round-news-container.full-article {
+    width: 95%;
+    max-width: 900px;
+}
+
+.full-article-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.article-header h2 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 1.5rem;
+    line-height: 1.3;
+}
+
+.article-meta {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.article-meta span {
+    background: #f1f3f4;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.article-body {
+    line-height: 1.6;
+    color: #333;
+    font-size: 1rem;
+}
+
+.article-footer {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.targeting-note {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 12px;
+    border-radius: 6px;
+    margin: 0;
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .second-round-news-container {
+        width: 95%;
+        max-height: 95vh;
+    }
+    
+    .candidates-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .news-meta {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .article-header h2 {
+        font-size: 1.3rem;
+    }
+} 

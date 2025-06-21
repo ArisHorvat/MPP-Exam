@@ -86,14 +86,51 @@ class ElectionSimulator {
                 };
             });
 
-            // Simulate random voting
+            // Simulate preference-based voting
             for (const voter of voters) {
-                // Randomly select a candidate
-                const randomCandidate = candidates[Math.floor(Math.random() * candidates.length)];
-                voteResults[randomCandidate.id].votes++;
+                // Create user preferences for this voter
+                await this.createVoterPreferences(voter, candidates);
+                
+                // Get the voter's preferences
+                const preferences = await this.getVoterPreferences(voter.cnp);
+                
+                // Find the candidate with the highest positive preference
+                let bestCandidate = null;
+                let bestScore = -1;
+                let decisionReason = '';
+                
+                for (const preference of preferences) {
+                    if (preference.preference_type === 'positive' && preference.strength > bestScore) {
+                        bestScore = preference.strength;
+                        bestCandidate = candidates.find(c => c.id === preference.candidate_id);
+                        decisionReason = `positive preference (strength: ${preference.strength})`;
+                    }
+                }
+                
+                // If no positive preference found, find the least negative preference
+                if (!bestCandidate) {
+                    let leastNegativeScore = -10;
+                    for (const preference of preferences) {
+                        if (preference.preference_type === 'negative' && preference.strength > leastNegativeScore) {
+                            leastNegativeScore = preference.strength;
+                            bestCandidate = candidates.find(c => c.id === preference.candidate_id);
+                            decisionReason = `least negative preference (strength: ${preference.strength})`;
+                        }
+                    }
+                }
+                
+                // If still no candidate found, pick a random one (fallback)
+                if (!bestCandidate) {
+                    bestCandidate = candidates[Math.floor(Math.random() * candidates.length)];
+                    decisionReason = 'random fallback (no clear preference)';
+                }
+                
+                console.log(`Voter ${voter.cnp} voted for ${bestCandidate.name} (${bestCandidate.party}) - ${decisionReason}`);
+                
+                voteResults[bestCandidate.id].votes++;
                 
                 // Record the vote in database
-                await this.recordSimulatedVote(voter, randomCandidate);
+                await this.recordSimulatedVote(voter, bestCandidate);
             }
 
             // Verify vote count
@@ -215,13 +252,54 @@ class ElectionSimulator {
                 };
             });
 
-            // Simulate random voting for second round
+            // Simulate preference-based voting for second round
             for (const voter of voters) {
-                const randomCandidate = topCandidates[Math.floor(Math.random() * topCandidates.length)];
-                voteResults[randomCandidate.candidate_id].votes++;
+                // Create user preferences for this voter (if they don't exist)
+                await this.createVoterPreferences(voter, topCandidates);
+                
+                // Get the voter's preferences for the top 2 candidates
+                const preferences = await this.getVoterPreferences(voter.cnp);
+                const topCandidatePreferences = preferences.filter(p => 
+                    topCandidates.some(tc => tc.candidate_id === p.candidate_id)
+                );
+                
+                // Find the candidate with the highest positive preference
+                let bestCandidate = null;
+                let bestScore = -1;
+                let decisionReason = '';
+                
+                for (const preference of topCandidatePreferences) {
+                    if (preference.preference_type === 'positive' && preference.strength > bestScore) {
+                        bestScore = preference.strength;
+                        bestCandidate = topCandidates.find(c => c.candidate_id === preference.candidate_id);
+                        decisionReason = `positive preference (strength: ${preference.strength})`;
+                    }
+                }
+                
+                // If no positive preference found, find the least negative preference
+                if (!bestCandidate) {
+                    let leastNegativeScore = -10;
+                    for (const preference of topCandidatePreferences) {
+                        if (preference.preference_type === 'negative' && preference.strength > leastNegativeScore) {
+                            leastNegativeScore = preference.strength;
+                            bestCandidate = topCandidates.find(c => c.candidate_id === preference.candidate_id);
+                            decisionReason = `least negative preference (strength: ${preference.strength})`;
+                        }
+                    }
+                }
+                
+                // If still no candidate found, pick a random one (fallback)
+                if (!bestCandidate) {
+                    bestCandidate = topCandidates[Math.floor(Math.random() * topCandidates.length)];
+                    decisionReason = 'random fallback (no clear preference)';
+                }
+                
+                console.log(`Voter ${voter.cnp} voted for ${bestCandidate.candidate_name} (${bestCandidate.candidate_party}) - ${decisionReason}`);
+                
+                voteResults[bestCandidate.candidate_id].votes++;
                 
                 // Record the vote in database
-                await this.recordSimulatedVote(voter, randomCandidate, true);
+                await this.recordSimulatedVote(voter, bestCandidate, true);
             }
 
             // Convert to array and sort by votes
@@ -477,18 +555,43 @@ class ElectionSimulator {
     // Reset election simulation
     async resetElection() {
         try {
-            await Promise.all([
-                pool.query('DELETE FROM first_round_results'),
-                pool.query('DELETE FROM second_round_results'),
-                pool.query('DELETE FROM second_round_candidates'),
-                pool.query('DELETE FROM votes') // Clear all votes, not just auto voters
-            ]);
+            console.log('Resetting election simulation...');
             
-            // Reset the used CNPs set
+            // Clear all votes
+            await pool.query('DELETE FROM votes');
+            console.log('Cleared all votes');
+            
+            // Clear first round results
+            await pool.query('DELETE FROM first_round_results');
+            console.log('Cleared first round results');
+            
+            // Clear second round results
+            await pool.query('DELETE FROM second_round_results');
+            console.log('Cleared second round results');
+            
+            // Clear user preferences for automatic voters (keep real users)
+            await pool.query(`
+                DELETE FROM user_candidate_preferences 
+                WHERE user_cnp IN (
+                    SELECT cnp FROM users 
+                    WHERE name LIKE 'Auto Voter %'
+                )
+            `);
+            console.log('Cleared automatic voter preferences');
+            
+            // Clear automatic voters (keep real users)
+            await pool.query(`
+                DELETE FROM users 
+                WHERE name LIKE 'Auto Voter %'
+            `);
+            console.log('Cleared automatic voters');
+            
+            // Reset election state
             this.usedCNPs.clear();
             this.currentElectionId = null;
             
             console.log('Election simulation reset successfully');
+            
         } catch (error) {
             console.error('Error resetting election:', error);
             throw error;
@@ -501,6 +604,69 @@ class ElectionSimulator {
         const totalVotes = parseInt(result.rows[0].total_votes);
         console.log(`Total votes in database: ${totalVotes}`);
         return totalVotes;
+    }
+
+    // Create preferences for an automatic voter
+    async createVoterPreferences(voter, candidates) {
+        try {
+            // Create user record for this voter if it doesn't exist
+            await pool.query(`
+                INSERT INTO users (name, cnp) 
+                VALUES ($1, $2) 
+                ON CONFLICT (cnp) DO NOTHING
+            `, [voter.name, voter.cnp]);
+
+            // Generate preferences for each candidate
+            for (const candidate of candidates) {
+                // Create more realistic preferences: 40% neutral, 30% positive, 30% negative
+                const rand = Math.floor(Math.random() * 10) + 1;
+                let preferenceType;
+                
+                if (rand <= 4) {
+                    preferenceType = 'neutral';
+                } else if (rand <= 7) {
+                    preferenceType = 'positive';
+                } else {
+                    preferenceType = 'negative';
+                }
+                
+                const strength = Math.floor(Math.random() * 5) + 1;
+                
+                // Insert preference
+                await pool.query(`
+                    INSERT INTO user_candidate_preferences (user_cnp, candidate_id, preference_type, strength)
+                    VALUES ($1, $2, $3, $4)
+                    ON CONFLICT (user_cnp, candidate_id) 
+                    DO UPDATE SET 
+                        preference_type = $3,
+                        strength = $4,
+                        updated_at = CURRENT_TIMESTAMP
+                `, [voter.cnp, candidate.id, preferenceType, strength]);
+            }
+            
+            console.log(`Created preferences for voter ${voter.cnp}`);
+        } catch (error) {
+            console.error('Error creating voter preferences:', error);
+            throw error;
+        }
+    }
+
+    // Get preferences for a voter
+    async getVoterPreferences(userCnp) {
+        try {
+            const result = await pool.query(`
+                SELECT ucp.*, c.name as candidate_name, c.party as candidate_party
+                FROM user_candidate_preferences ucp
+                JOIN candidates c ON ucp.candidate_id = c.id
+                WHERE ucp.user_cnp = $1
+                ORDER BY ucp.updated_at DESC
+            `, [userCnp]);
+            
+            return result.rows;
+        } catch (error) {
+            console.error('Error getting voter preferences:', error);
+            throw error;
+        }
     }
 }
 

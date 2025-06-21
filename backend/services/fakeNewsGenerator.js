@@ -505,6 +505,22 @@ class FakeNewsGenerator {
         }
     }
 
+    // Clear user targeted news
+    async clearUserTargetedNews(userCnp) {
+        try {
+            const result = await pool.query(`
+                DELETE FROM user_targeted_news 
+                WHERE user_cnp = $1
+            `, [userCnp]);
+            
+            console.log(`Cleared ${result.rowCount} news articles for user ${userCnp}`);
+            return result.rowCount;
+        } catch (error) {
+            console.error('Error clearing user targeted news:', error);
+            throw error;
+        }
+    }
+
     // Generate initial user preferences based on voting history
     async generateInitialUserPreferences(userCnp) {
         try {

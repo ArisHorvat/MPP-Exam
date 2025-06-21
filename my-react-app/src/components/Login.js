@@ -23,7 +23,7 @@ const Login = ({ onLogin }) => {
                 // Store user data in localStorage
                 localStorage.setItem('user', JSON.stringify(response.user));
                 onLogin(response.user);
-                navigate('/election');
+                navigate('/candidates');
             }
         } catch (err) {
             setError('Failed to connect to server. Please try again.');

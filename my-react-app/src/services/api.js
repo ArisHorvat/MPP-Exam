@@ -253,6 +253,16 @@ class ApiService {
         return response.json();
     }
 
+    async clearUserTargetedNews(userCnp) {
+        const response = await fetch(`${API_BASE_URL}/api/user-targeted-news/clear/${userCnp}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        return response.json();
+    }
+
     // Socket.IO methods
     onInitialData(callback) {
         this.socket.on('initialData', callback);
