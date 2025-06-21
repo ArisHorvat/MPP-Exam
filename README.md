@@ -27,6 +27,20 @@ A full-stack web application for managing political candidates with real-time up
 - REST API endpoints
 - CORS enabled for cross-origin requests
 
+## Deployment
+
+### Production Backend
+The backend is deployed on Railway and available at:
+```
+https://mpp-exam-production-d367.up.railway.app
+```
+
+### Frontend Configuration
+The frontend is configured to use the production backend by default. To switch to local development:
+
+1. Edit `my-react-app/src/services/api.js`
+2. Change the `API_BASE_URL` to `http://localhost:5000` for local development
+
 ## Prerequisites
 
 - Node.js (version 16 or higher)
@@ -52,7 +66,14 @@ A full-stack web application for managing political candidates with real-time up
 
 ## Running the Application
 
-### Option 1: Run both servers together (Recommended)
+### Option 1: Frontend only (uses production backend)
+```bash
+npm run start:frontend
+```
+
+This will start only the frontend and connect to the production backend.
+
+### Option 2: Run both servers locally (Development)
 ```bash
 npm start
 ```
@@ -61,7 +82,7 @@ This will start:
 - Backend server on http://localhost:5000
 - Frontend development server on http://localhost:3000
 
-### Option 2: Run servers separately
+### Option 3: Run servers separately
 
 **Backend only:**
 ```bash
@@ -73,7 +94,7 @@ npm run start:backend
 npm run start:frontend
 ```
 
-### Option 3: Development mode with auto-restart
+### Option 4: Development mode with auto-restart
 ```bash
 npm run dev
 ```
@@ -100,7 +121,7 @@ This runs both servers in development mode with auto-restart on file changes.
 
 ## API Endpoints
 
-### REST API (Backend: http://localhost:5000)
+### REST API (Production: https://mpp-exam-production-d367.up.railway.app)
 
 - `GET /api/candidates` - Get all candidates
 - `GET /api/party-stats` - Get party statistics
@@ -160,18 +181,20 @@ MPP-Exam/
    - Frontend: React will automatically suggest an alternative port
 
 2. **Connection refused**
-   - Ensure both servers are running
+   - Ensure both servers are running (for local development)
    - Check that backend is on port 5000 and frontend on port 3000
    - Verify CORS settings in `backend/server.js`
+   - For production, check Railway deployment status
 
 3. **Data not persisting**
    - Check that `backend/data/` directory exists and is writable
    - Verify file permissions on `candidates.json`
 
 4. **Socket.IO connection issues**
-   - Ensure backend is running before frontend
+   - Ensure backend is running before frontend (for local development)
    - Check browser console for connection errors
    - Verify Socket.IO client version compatibility
+   - For production, check Railway logs
 
 ### Development Tips
 

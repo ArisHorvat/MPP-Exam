@@ -1,6 +1,6 @@
 import io from 'socket.io-client';
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = 'https://mpp-exam-production-d367.up.railway.app';
 const socket = io(API_BASE_URL);
 
 class ApiService {
@@ -34,6 +34,51 @@ class ApiService {
         return response.json();
     }
 
+    async getVotingStats() {
+        const response = await fetch(`${API_BASE_URL}/api/voting-stats`);
+        return response.json();
+    }
+
+    async getVotingResults() {
+        const response = await fetch(`${API_BASE_URL}/api/voting-results`);
+        return response.json();
+    }
+
+    // Authentication methods
+    async register(name, cnp) {
+        const response = await fetch(`${API_BASE_URL}/api/register`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name, cnp }),
+        });
+        return response.json();
+    }
+
+    async login(cnp) {
+        const response = await fetch(`${API_BASE_URL}/api/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ cnp }),
+        });
+        return response.json();
+    }
+
+    // Voting methods
+    async submitVote(cnp, candidateId) {
+        const response = await fetch(`${API_BASE_URL}/api/vote`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ cnp, candidateId }),
+        });
+        return response.json();
+    }
+
     // Socket.IO methods
     onInitialData(callback) {
         this.socket.on('initialData', callback);
@@ -57,6 +102,10 @@ class ApiService {
 
     onGenerationStopped(callback) {
         this.socket.on('generationStopped', callback);
+    }
+
+    onVoteSubmitted(callback) {
+        this.socket.on('voteSubmitted', callback);
     }
 
     // Emit methods

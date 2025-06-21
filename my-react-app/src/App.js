@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import CandidateList from './components/CandidateList';
 import CandidateDetail from './components/CandidateDetail';
 import CandidateForm from './components/CandidateForm';
 import PartyChart from './components/PartyChart';
+import Login from './components/Login';
+import Register from './components/Register';
+import Voting from './components/Voting';
 import apiService from './services/api';
 import './App.css';
 
@@ -11,6 +14,19 @@ function App() {
     const [candidates, setCandidates] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [user, setUser] = useState(null);
+
+    // Check for existing user session on app load
+    useEffect(() => {
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+            try {
+                setUser(JSON.parse(savedUser));
+            } catch (err) {
+                localStorage.removeItem('user');
+            }
+        }
+    }, []);
 
     // Load initial data from backend
     useEffect(() => {
@@ -62,6 +78,15 @@ function App() {
         };
     }, []);
 
+    const handleLogin = (userData) => {
+        setUser(userData);
+    };
+
+    const handleLogout = () => {
+        setUser(null);
+        localStorage.removeItem('user');
+    };
+
     const handleSaveCandidate = (candidateData) => {
         if (candidateData.id && candidates.find(c => c.id === candidateData.id)) {
             // Update existing candidate
@@ -99,6 +124,27 @@ function App() {
         <Router>
             <div className="App">
                 <Routes>
+                    {/* Public routes */}
+                    <Route 
+                        path="/login" 
+                        element={
+                            user ? <Navigate to="/voting" replace /> : <Login onLogin={handleLogin} />
+                        } 
+                    />
+                    <Route 
+                        path="/register" 
+                        element={
+                            user ? <Navigate to="/voting" replace /> : <Register onLogin={handleLogin} />
+                        } 
+                    />
+                    
+                    {/* Protected routes */}
+                    <Route 
+                        path="/voting" 
+                        element={
+                            user ? <Voting user={user} /> : <Navigate to="/login" replace />
+                        } 
+                    />
                     <Route 
                         path="/" 
                         element={
@@ -106,6 +152,8 @@ function App() {
                                 candidates={candidates}
                                 onSaveCandidate={handleSaveCandidate}
                                 onDeleteCandidate={handleDeleteCandidate}
+                                user={user}
+                                onLogout={handleLogout}
                             />
                         } 
                     />
@@ -115,6 +163,8 @@ function App() {
                             <CandidateDetail 
                                 candidates={candidates}
                                 onDeleteCandidate={handleDeleteCandidate}
+                                user={user}
+                                onLogout={handleLogout}
                             />
                         } 
                     />
@@ -124,6 +174,8 @@ function App() {
                             <CandidateForm 
                                 candidates={candidates}
                                 onSave={handleSaveCandidate}
+                                user={user}
+                                onLogout={handleLogout}
                             />
                         } 
                     />
@@ -133,6 +185,8 @@ function App() {
                             <CandidateForm 
                                 candidates={candidates}
                                 onSave={handleSaveCandidate}
+                                user={user}
+                                onLogout={handleLogout}
                             />
                         } 
                     />
@@ -141,9 +195,14 @@ function App() {
                         element={
                             <PartyChart 
                                 candidates={candidates}
+                                user={user}
+                                onLogout={handleLogout}
                             />
                         } 
                     />
+                    
+                    {/* Default redirect */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </div>
         </Router>

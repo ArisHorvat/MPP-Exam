@@ -5,7 +5,7 @@ import CandidateAvatar from './CandidateAvatar';
 import DeleteConfirmation from './DeleteConfirmation';
 import './CandidateList.css';
 
-function CandidateList({ candidates, onSaveCandidate, onDeleteCandidate }) {
+function CandidateList({ candidates, onSaveCandidate, onDeleteCandidate, user, onLogout }) {
     const navigate = useNavigate();
     const [deleteCandidate, setDeleteCandidate] = useState(null);
 
@@ -31,6 +31,14 @@ function CandidateList({ candidates, onSaveCandidate, onDeleteCandidate }) {
         navigate('/chart');
     };
 
+    const handleVoting = () => {
+        navigate('/voting');
+    };
+
+    const handleLogin = () => {
+        navigate('/login');
+    };
+
     const confirmDelete = (candidateId) => {
         onDeleteCandidate(candidateId);
         setDeleteCandidate(null);
@@ -43,8 +51,27 @@ function CandidateList({ candidates, onSaveCandidate, onDeleteCandidate }) {
     return (
         <div className="candidate-list-container">
             <div className="list-header">
-                <h1>Election Candidates</h1>
+                <div className="header-left">
+                    <h1>Election Candidates</h1>
+                    {user && (
+                        <div className="user-info">
+                            <span>Welcome, {user.name}</span>
+                            <button onClick={onLogout} className="logout-btn">
+                                Logout
+                            </button>
+                        </div>
+                    )}
+                </div>
                 <div className="header-actions">
+                    {user ? (
+                        <button onClick={handleVoting} className="voting-btn">
+                            🗳️ Vote Now
+                        </button>
+                    ) : (
+                        <button onClick={handleLogin} className="login-btn">
+                            🔐 Login to Vote
+                        </button>
+                    )}
                     <button onClick={handleViewChart} className="chart-btn">
                         📊 View Chart
                     </button>

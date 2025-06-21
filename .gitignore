@@ -156,3 +156,13 @@ my-react-app/coverage/
 
 # Root level node_modules (if any)
 node_modules/
+
+# Database files
+*.sql
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment files
+.env*
+!.env.example

@@ -3,8 +3,9 @@ const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
-const fs = require('fs').promises;
-const path = require('path');
+require('dotenv').config();
+
+const { candidateService, userService, voteService, statsService } = require('./services/database');
 
 const app = express();
 const server = http.createServer(app);
@@ -18,92 +19,6 @@ const io = socketIo(server, {
 // Middleware
 app.use(cors());
 app.use(express.json());
-
-// Data file path
-const DATA_FILE = path.join(__dirname, 'data', 'candidates.json');
-
-// Ensure data directory exists
-async function ensureDataDirectory() {
-    const dataDir = path.dirname(DATA_FILE);
-    try {
-        await fs.access(dataDir);
-    } catch {
-        await fs.mkdir(dataDir, { recursive: true });
-    }
-}
-
-// Load candidates from file
-async function loadCandidates() {
-    try {
-        await ensureDataDirectory();
-        const data = await fs.readFile(DATA_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        if (error.code === 'ENOENT') {
-            // File doesn't exist, return initial data
-            const initialCandidates = [
-                {
-                    id: 1,
-                    name: "John Smith",
-                    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face",
-                    party: "Democratic Party",
-                    description: "Experienced politician with 10 years in public service. Focuses on healthcare reform and environmental protection."
-                },
-                {
-                    id: 2,
-                    name: "Sarah Johnson",
-                    image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=200&h=200&fit=crop&crop=face",
-                    party: "Republican Party",
-                    description: "Business leader and former mayor. Advocates for economic growth and tax reform."
-                },
-                {
-                    id: 3,
-                    name: "Michael Chen",
-                    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face",
-                    party: "Independent",
-                    description: "Community activist and educator. Campaigns for education reform and social justice."
-                },
-                {
-                    id: 4,
-                    name: "Emily Davis",
-                    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face",
-                    party: "Green Party",
-                    description: "Environmental scientist and climate advocate. Focuses on renewable energy and sustainability."
-                },
-                {
-                    id: 5,
-                    name: "David Wilson",
-                    image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&crop=face",
-                    party: "Libertarian Party",
-                    description: "Small business owner and constitutional advocate. Promotes individual freedoms and limited government."
-                }
-            ];
-            await saveCandidates(initialCandidates);
-            return initialCandidates;
-        }
-        console.error('Error loading candidates:', error);
-        return [];
-    }
-}
-
-// Save candidates to file
-async function saveCandidates(candidates) {
-    try {
-        await ensureDataDirectory();
-        await fs.writeFile(DATA_FILE, JSON.stringify(candidates, null, 2));
-    } catch (error) {
-        console.error('Error saving candidates:', error);
-    }
-}
-
-// Store candidates and party statistics
-let candidates = [];
-
-// Initialize candidates from file
-(async () => {
-    candidates = await loadCandidates();
-    console.log(`Loaded ${candidates.length} candidates from storage`);
-})();
 
 // Available parties and their colors
 const parties = [
@@ -143,15 +58,6 @@ const lastNames = [
 let generationThread = null;
 let isGenerating = false;
 
-// Generate party statistics
-function getPartyStats() {
-    const stats = {};
-    parties.forEach(party => {
-        stats[party] = candidates.filter(c => c.party === party).length;
-    });
-    return stats;
-}
-
 // Generate a random candidate
 function generateRandomCandidate() {
     const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
@@ -174,7 +80,6 @@ function generateRandomCandidate() {
     const description = descriptions[Math.floor(Math.random() * descriptions.length)];
     
     return {
-        id: Date.now() + Math.random(),
         name: `${firstName} ${lastName}`,
         image: "", // Will use party icon
         party: party,
@@ -192,19 +97,25 @@ async function startGeneration() {
     generationThread = setInterval(async () => {
         if (!isGenerating) return;
         
-        const newCandidate = generateRandomCandidate();
-        candidates.push(newCandidate);
-        
-        // Save to file
-        await saveCandidates(candidates);
-        
-        // Emit updates to all connected clients
-        io.emit('candidateAdded', {
-            candidate: newCandidate,
-            partyStats: getPartyStats()
-        });
-        
-        console.log(`Generated candidate: ${newCandidate.name} (${newCandidate.party})`);
+        try {
+            const newCandidateData = generateRandomCandidate();
+            const newCandidate = await candidateService.createCandidate(newCandidateData);
+            
+            // Get updated party stats
+            const partyStats = await statsService.getPartyStats();
+            const votingStats = await statsService.getVotingStats();
+            
+            // Emit updates to all connected clients
+            io.emit('candidateAdded', {
+                candidate: newCandidate,
+                partyStats: partyStats,
+                votingStats: votingStats
+            });
+            
+            console.log(`Generated candidate: ${newCandidate.name} (${newCandidate.party})`);
+        } catch (error) {
+            console.error('Error generating candidate:', error);
+        }
     }, 3000); // Generate every 3 seconds
 }
 
@@ -223,15 +134,26 @@ function stopGeneration() {
 }
 
 // Socket.IO connection handling
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
     console.log('Client connected:', socket.id);
     
-    // Send initial data
-    socket.emit('initialData', {
-        candidates: candidates,
-        partyStats: getPartyStats(),
-        isGenerating: isGenerating
-    });
+    try {
+        // Send initial data
+        const [candidates, partyStats, votingStats] = await Promise.all([
+            candidateService.getAllCandidates(),
+            statsService.getPartyStats(),
+            statsService.getVotingStats()
+        ]);
+        
+        socket.emit('initialData', {
+            candidates: candidates,
+            partyStats: partyStats,
+            votingStats: votingStats,
+            isGenerating: isGenerating
+        });
+    } catch (error) {
+        console.error('Error sending initial data:', error);
+    }
     
     socket.on('disconnect', () => {
         console.log('Client disconnected:', socket.id);
@@ -250,59 +172,89 @@ io.on('connection', (socket) => {
     
     // Handle CRUD operations
     socket.on('addCandidate', async (candidateData) => {
-        const newCandidate = {
-            ...candidateData,
-            id: Date.now() + Math.random()
-        };
-        candidates.push(newCandidate);
-        
-        // Save to file
-        await saveCandidates(candidates);
-        
-        io.emit('candidateAdded', {
-            candidate: newCandidate,
-            partyStats: getPartyStats()
-        });
+        try {
+            const newCandidate = await candidateService.createCandidate(candidateData);
+            
+            const [partyStats, votingStats] = await Promise.all([
+                statsService.getPartyStats(),
+                statsService.getVotingStats()
+            ]);
+            
+            io.emit('candidateAdded', {
+                candidate: newCandidate,
+                partyStats: partyStats,
+                votingStats: votingStats
+            });
+        } catch (error) {
+            console.error('Error adding candidate:', error);
+            socket.emit('error', { message: 'Failed to add candidate' });
+        }
     });
     
     socket.on('updateCandidate', async (candidateData) => {
-        const index = candidates.findIndex(c => c.id === candidateData.id);
-        if (index !== -1) {
-            candidates[index] = candidateData;
+        try {
+            const updatedCandidate = await candidateService.updateCandidate(candidateData.id, candidateData);
             
-            // Save to file
-            await saveCandidates(candidates);
-            
-            io.emit('candidateUpdated', {
-                candidate: candidateData,
-                partyStats: getPartyStats()
-            });
+            if (updatedCandidate) {
+                const [partyStats, votingStats] = await Promise.all([
+                    statsService.getPartyStats(),
+                    statsService.getVotingStats()
+                ]);
+                
+                io.emit('candidateUpdated', {
+                    candidate: updatedCandidate,
+                    partyStats: partyStats,
+                    votingStats: votingStats
+                });
+            }
+        } catch (error) {
+            console.error('Error updating candidate:', error);
+            socket.emit('error', { message: 'Failed to update candidate' });
         }
     });
     
     socket.on('deleteCandidate', async (candidateId) => {
-        const index = candidates.findIndex(c => c.id === candidateId);
-        if (index !== -1) {
-            const deletedCandidate = candidates.splice(index, 1)[0];
+        try {
+            const deletedCandidate = await candidateService.deleteCandidate(candidateId);
             
-            // Save to file
-            await saveCandidates(candidates);
-            
-            io.emit('candidateDeleted', {
-                candidateId: candidateId,
-                partyStats: getPartyStats()
-            });
+            if (deletedCandidate) {
+                const [partyStats, votingStats] = await Promise.all([
+                    statsService.getPartyStats(),
+                    statsService.getVotingStats()
+                ]);
+                
+                io.emit('candidateDeleted', {
+                    candidateId: candidateId,
+                    partyStats: partyStats,
+                    votingStats: votingStats
+                });
+            }
+        } catch (error) {
+            console.error('Error deleting candidate:', error);
+            socket.emit('error', { message: 'Failed to delete candidate' });
         }
     });
 });
 
 // REST API endpoints
-app.get('/api/candidates', (req, res) => {
-    res.json(candidates);
+app.get('/api/candidates', async (req, res) => {
+    try {
+        const candidates = await candidateService.getAllCandidates();
+        res.json(candidates);
+    } catch (error) {
+        console.error('Error getting candidates:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
-app.get('/api/party-stats', (req, res) => {
-    res.json(getPartyStats());
+app.get('/api/party-stats', async (req, res) => {
+    try {
+        const stats = await statsService.getPartyStats();
+        res.json(stats);
+    } catch (error) {
+        console.error('Error getting party stats:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 app.get('/api/parties', (req, res) => {
@@ -313,9 +265,154 @@ app.get('/api/party-colors', (req, res) => {
     res.json(partyColors);
 });
 
+app.get('/api/voting-stats', async (req, res) => {
+    try {
+        const stats = await statsService.getVotingStats();
+        res.json(stats);
+    } catch (error) {
+        console.error('Error getting voting stats:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.get('/api/voting-results', async (req, res) => {
+    try {
+        const results = await voteService.getVotingResults();
+        res.json(results);
+    } catch (error) {
+        console.error('Error getting voting results:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// User registration
+app.post('/api/register', async (req, res) => {
+    try {
+        const { name, cnp } = req.body;
+        
+        // Validate input
+        if (!name || !cnp) {
+            return res.status(400).json({ error: 'Name and CNP are required' });
+        }
+        
+        // Validate CNP format (5 digits)
+        if (!/^\d{5}$/.test(cnp)) {
+            return res.status(400).json({ error: 'CNP must be exactly 5 digits' });
+        }
+        
+        // Check if CNP already exists
+        const existingUser = await userService.getUserByCnp(cnp);
+        if (existingUser) {
+            return res.status(400).json({ error: 'CNP already registered' });
+        }
+        
+        // Create new user
+        const newUser = await userService.createUser({ name, cnp });
+        
+        res.status(201).json({ 
+            message: 'User registered successfully',
+            user: { id: newUser.id, name: newUser.name, cnp: newUser.cnp }
+        });
+        
+    } catch (error) {
+        console.error('Registration error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// User login
+app.post('/api/login', async (req, res) => {
+    try {
+        const { cnp } = req.body;
+        
+        // Validate input
+        if (!cnp) {
+            return res.status(400).json({ error: 'CNP is required' });
+        }
+        
+        // Find user by CNP
+        const user = await userService.getUserByCnp(cnp);
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid CNP' });
+        }
+        
+        res.json({ 
+            message: 'Login successful',
+            user: { id: user.id, name: user.name, cnp: user.cnp }
+        });
+        
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Submit vote
+app.post('/api/vote', async (req, res) => {
+    try {
+        const { cnp, candidateId } = req.body;
+        
+        // Validate input
+        if (!cnp || !candidateId) {
+            return res.status(400).json({ error: 'CNP and candidate ID are required' });
+        }
+        
+        // Find user by CNP
+        const user = await userService.getUserByCnp(cnp);
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid CNP' });
+        }
+        
+        // Check if candidate exists
+        const candidate = await candidateService.getCandidateById(candidateId);
+        if (!candidate) {
+            return res.status(400).json({ error: 'Invalid candidate ID' });
+        }
+        
+        // Check if user already voted (database constraint will also prevent this)
+        const existingVote = await voteService.getVoteByCnp(cnp);
+        if (existingVote) {
+            return res.status(400).json({ error: 'User has already voted' });
+        }
+        
+        // Create vote
+        const vote = await voteService.createVote({
+            cnp,
+            candidateId,
+            candidateName: candidate.name,
+            candidateParty: candidate.party
+        });
+        
+        // Get updated voting stats
+        const votingStats = await statsService.getVotingStats();
+        
+        // Emit voting update to all clients
+        io.emit('voteSubmitted', {
+            vote,
+            votingStats: votingStats
+        });
+        
+        res.json({ 
+            message: 'Vote submitted successfully',
+            vote: { candidateName: candidate.name, candidateParty: candidate.party }
+        });
+        
+    } catch (error) {
+        console.error('Voting error:', error);
+        
+        // Check if it's a unique constraint violation
+        if (error.code === '23505' && error.constraint === 'votes_cnp_key') {
+            return res.status(400).json({ error: 'User has already voted' });
+        }
+        
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`WebSocket server ready for real-time updates`);
+    console.log(`Database connection established`);
 }); 

@@ -10,55 +10,125 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 20px;
 }
 
-.list-header h1 {
-    color: #333;
+.header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.header-left h1 {
     margin: 0;
+    color: #333;
     font-size: 2.5rem;
+    font-weight: 700;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 1rem;
+    color: #666;
+}
+
+.user-info span {
     font-weight: 600;
+    color: #333;
+}
+
+.logout-btn {
+    background: #ff4757;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+    background: #ff3742;
+    transform: translateY(-1px);
 }
 
 .header-actions {
     display: flex;
     gap: 15px;
-    align-items: center;
+    flex-wrap: wrap;
 }
 
-.chart-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 25px;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.chart-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.add-candidate-btn {
+.voting-btn {
     background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
     color: white;
     border: none;
     padding: 12px 24px;
-    border-radius: 25px;
+    border-radius: 8px;
     cursor: pointer;
+    font-weight: 600;
     font-size: 1rem;
-    font-weight: 500;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.voting-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(40, 167, 69, 0.3);
+}
+
+.login-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.login-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+}
+
+.chart-btn {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.chart-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3);
+}
+
+.add-candidate-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
 }
 
 .add-candidate-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
 }
 
 .table-container {
