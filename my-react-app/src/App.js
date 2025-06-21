@@ -4,83 +4,96 @@ import CandidateList from './components/CandidateList';
 import CandidateDetail from './components/CandidateDetail';
 import CandidateForm from './components/CandidateForm';
 import PartyChart from './components/PartyChart';
+import apiService from './services/api';
 import './App.css';
 
-// Initial sample data
-const initialCandidates = [
-    {
-        id: 1,
-        name: "John Smith",
-        image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face",
-        party: "Democratic Party",
-        description: "Experienced politician with 10 years in public service. Focuses on healthcare reform and environmental protection."
-    },
-    {
-        id: 2,
-        name: "Sarah Johnson",
-        image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=200&h=200&fit=crop&crop=face",
-        party: "Republican Party",
-        description: "Business leader and former mayor. Advocates for economic growth and tax reform."
-    },
-    {
-        id: 3,
-        name: "Michael Chen",
-        image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face",
-        party: "Independent",
-        description: "Community activist and educator. Campaigns for education reform and social justice."
-    },
-    {
-        id: 4,
-        name: "Emily Davis",
-        image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face",
-        party: "Green Party",
-        description: "Environmental scientist and climate advocate. Focuses on renewable energy and sustainability."
-    },
-    {
-        id: 5,
-        name: "David Wilson",
-        image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&crop=face",
-        party: "Libertarian Party",
-        description: "Small business owner and constitutional advocate. Promotes individual freedoms and limited government."
-    }
-];
-
 function App() {
-    const [candidates, setCandidates] = useState(initialCandidates);
+    const [candidates, setCandidates] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    // Listen for generated candidates from the chart component
+    // Load initial data from backend
     useEffect(() => {
-        const handleCandidateGenerated = (event) => {
-            const { candidate } = event.detail;
-            setCandidates(prev => [...prev, candidate]);
+        const loadInitialData = async () => {
+            try {
+                setLoading(true);
+                const initialData = await apiService.getCandidates();
+                setCandidates(initialData);
+                setError(null);
+            } catch (err) {
+                console.error('Failed to load initial data:', err);
+                setError('Failed to connect to server. Please check if the backend is running.');
+            } finally {
+                setLoading(false);
+            }
         };
 
-        window.addEventListener('candidateGenerated', handleCandidateGenerated);
+        loadInitialData();
+    }, []);
 
+    // Socket.IO event listeners
+    useEffect(() => {
+        // Listen for initial data from server
+        apiService.onInitialData((data) => {
+            setCandidates(data.candidates);
+            setLoading(false);
+        });
+
+        // Listen for new candidates
+        apiService.onCandidateAdded((data) => {
+            setCandidates(prev => [...prev, data.candidate]);
+        });
+
+        // Listen for candidate updates
+        apiService.onCandidateUpdated((data) => {
+            setCandidates(prev => prev.map(c => 
+                c.id === data.candidate.id ? data.candidate : c
+            ));
+        });
+
+        // Listen for candidate deletions
+        apiService.onCandidateDeleted((data) => {
+            setCandidates(prev => prev.filter(c => c.id !== data.candidateId));
+        });
+
+        // Cleanup on unmount
         return () => {
-            window.removeEventListener('candidateGenerated', handleCandidateGenerated);
+            apiService.removeAllListeners();
         };
     }, []);
 
     const handleSaveCandidate = (candidateData) => {
         if (candidateData.id && candidates.find(c => c.id === candidateData.id)) {
             // Update existing candidate
-            setCandidates(prev => prev.map(c => 
-                c.id === candidateData.id ? candidateData : c
-            ));
+            apiService.emitUpdateCandidate(candidateData);
         } else {
             // Add new candidate
-            const newCandidate = {
-                ...candidateData,
-                id: Date.now() // Use timestamp as ID for new candidates
-            };
-            setCandidates(prev => [...prev, newCandidate]);
+            apiService.emitAddCandidate(candidateData);
         }
     };
 
     const handleDeleteCandidate = (candidateId) => {
-        setCandidates(prev => prev.filter(c => c.id !== candidateId));
+        apiService.emitDeleteCandidate(candidateId);
     };
+
+    if (loading) {
+        return (
+            <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>Loading candidates...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="error-container">
+                <h2>Connection Error</h2>
+                <p>{error}</p>
+                <p>Please make sure the backend server is running on port 5000.</p>
+            </div>
+        );
+    }
 
     return (
         <Router>

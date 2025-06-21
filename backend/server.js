@@ -3,6 +3,8 @@ const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
+const fs = require('fs').promises;
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
@@ -17,44 +19,91 @@ const io = socketIo(server, {
 app.use(cors());
 app.use(express.json());
 
-// Store candidates and party statistics
-let candidates = [
-    {
-        id: 1,
-        name: "John Smith",
-        image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face",
-        party: "Democratic Party",
-        description: "Experienced politician with 10 years in public service. Focuses on healthcare reform and environmental protection."
-    },
-    {
-        id: 2,
-        name: "Sarah Johnson",
-        image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=200&h=200&fit=crop&crop=face",
-        party: "Republican Party",
-        description: "Business leader and former mayor. Advocates for economic growth and tax reform."
-    },
-    {
-        id: 3,
-        name: "Michael Chen",
-        image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face",
-        party: "Independent",
-        description: "Community activist and educator. Campaigns for education reform and social justice."
-    },
-    {
-        id: 4,
-        name: "Emily Davis",
-        image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face",
-        party: "Green Party",
-        description: "Environmental scientist and climate advocate. Focuses on renewable energy and sustainability."
-    },
-    {
-        id: 5,
-        name: "David Wilson",
-        image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&crop=face",
-        party: "Libertarian Party",
-        description: "Small business owner and constitutional advocate. Promotes individual freedoms and limited government."
+// Data file path
+const DATA_FILE = path.join(__dirname, 'data', 'candidates.json');
+
+// Ensure data directory exists
+async function ensureDataDirectory() {
+    const dataDir = path.dirname(DATA_FILE);
+    try {
+        await fs.access(dataDir);
+    } catch {
+        await fs.mkdir(dataDir, { recursive: true });
     }
-];
+}
+
+// Load candidates from file
+async function loadCandidates() {
+    try {
+        await ensureDataDirectory();
+        const data = await fs.readFile(DATA_FILE, 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            // File doesn't exist, return initial data
+            const initialCandidates = [
+                {
+                    id: 1,
+                    name: "John Smith",
+                    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face",
+                    party: "Democratic Party",
+                    description: "Experienced politician with 10 years in public service. Focuses on healthcare reform and environmental protection."
+                },
+                {
+                    id: 2,
+                    name: "Sarah Johnson",
+                    image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=200&h=200&fit=crop&crop=face",
+                    party: "Republican Party",
+                    description: "Business leader and former mayor. Advocates for economic growth and tax reform."
+                },
+                {
+                    id: 3,
+                    name: "Michael Chen",
+                    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face",
+                    party: "Independent",
+                    description: "Community activist and educator. Campaigns for education reform and social justice."
+                },
+                {
+                    id: 4,
+                    name: "Emily Davis",
+                    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face",
+                    party: "Green Party",
+                    description: "Environmental scientist and climate advocate. Focuses on renewable energy and sustainability."
+                },
+                {
+                    id: 5,
+                    name: "David Wilson",
+                    image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&crop=face",
+                    party: "Libertarian Party",
+                    description: "Small business owner and constitutional advocate. Promotes individual freedoms and limited government."
+                }
+            ];
+            await saveCandidates(initialCandidates);
+            return initialCandidates;
+        }
+        console.error('Error loading candidates:', error);
+        return [];
+    }
+}
+
+// Save candidates to file
+async function saveCandidates(candidates) {
+    try {
+        await ensureDataDirectory();
+        await fs.writeFile(DATA_FILE, JSON.stringify(candidates, null, 2));
+    } catch (error) {
+        console.error('Error saving candidates:', error);
+    }
+}
+
+// Store candidates and party statistics
+let candidates = [];
+
+// Initialize candidates from file
+(async () => {
+    candidates = await loadCandidates();
+    console.log(`Loaded ${candidates.length} candidates from storage`);
+})();
 
 // Available parties and their colors
 const parties = [
@@ -134,17 +183,20 @@ function generateRandomCandidate() {
 }
 
 // Start candidate generation thread
-function startGeneration() {
+async function startGeneration() {
     if (isGenerating) return;
     
     isGenerating = true;
     console.log("Starting candidate generation...");
     
-    generationThread = setInterval(() => {
+    generationThread = setInterval(async () => {
         if (!isGenerating) return;
         
         const newCandidate = generateRandomCandidate();
         candidates.push(newCandidate);
+        
+        // Save to file
+        await saveCandidates(candidates);
         
         // Emit updates to all connected clients
         io.emit('candidateAdded', {
@@ -197,12 +249,15 @@ io.on('connection', (socket) => {
     });
     
     // Handle CRUD operations
-    socket.on('addCandidate', (candidateData) => {
+    socket.on('addCandidate', async (candidateData) => {
         const newCandidate = {
             ...candidateData,
             id: Date.now() + Math.random()
         };
         candidates.push(newCandidate);
+        
+        // Save to file
+        await saveCandidates(candidates);
         
         io.emit('candidateAdded', {
             candidate: newCandidate,
@@ -210,10 +265,13 @@ io.on('connection', (socket) => {
         });
     });
     
-    socket.on('updateCandidate', (candidateData) => {
+    socket.on('updateCandidate', async (candidateData) => {
         const index = candidates.findIndex(c => c.id === candidateData.id);
         if (index !== -1) {
             candidates[index] = candidateData;
+            
+            // Save to file
+            await saveCandidates(candidates);
             
             io.emit('candidateUpdated', {
                 candidate: candidateData,
@@ -222,10 +280,13 @@ io.on('connection', (socket) => {
         }
     });
     
-    socket.on('deleteCandidate', (candidateId) => {
+    socket.on('deleteCandidate', async (candidateId) => {
         const index = candidates.findIndex(c => c.id === candidateId);
         if (index !== -1) {
             const deletedCandidate = candidates.splice(index, 1)[0];
+            
+            // Save to file
+            await saveCandidates(candidates);
             
             io.emit('candidateDeleted', {
                 candidateId: candidateId,

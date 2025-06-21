@@ -1,0 +1,28 @@
+{
+  "name": "candidate-management-system",
+  "version": "1.0.0",
+  "description": "Full-stack candidate management system with real-time updates",
+  "scripts": {
+    "install-all": "npm install && cd backend && npm install && cd ../my-react-app && npm install",
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd my-react-app && npm start",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd my-react-app && npm start",
+    "build": "cd my-react-app && npm run build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "react",
+    "nodejs",
+    "socket.io",
+    "real-time",
+    "candidates",
+    "politics"
+  ],
+  "author": "",
+  "license": "MIT"
+} 

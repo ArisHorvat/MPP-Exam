@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Chart as ChartJS,
@@ -11,6 +11,7 @@ import {
     ArcElement
 } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
+import apiService from '../services/api';
 import './PartyChart.css';
 
 ChartJS.register(
@@ -28,41 +29,26 @@ const PartyChart = ({ candidates }) => {
     const [partyStats, setPartyStats] = useState({});
     const [isGenerating, setIsGenerating] = useState(false);
     const [chartType, setChartType] = useState('bar'); // 'bar' or 'doughnut'
-    const generationInterval = useRef(null);
+    const [parties, setParties] = useState([]);
+    const [partyColors, setPartyColors] = useState({});
 
-    // Available parties and their colors
-    const parties = [
-        "Democratic Party",
-        "Republican Party", 
-        "Independent",
-        "Green Party",
-        "Libertarian Party"
-    ];
+    // Load parties and colors from backend
+    useEffect(() => {
+        const loadPartyData = async () => {
+            try {
+                const [partiesData, colorsData] = await Promise.all([
+                    apiService.getParties(),
+                    apiService.getPartyColors()
+                ]);
+                setParties(partiesData);
+                setPartyColors(colorsData);
+            } catch (err) {
+                console.error('Failed to load party data:', err);
+            }
+        };
 
-    const partyColors = {
-        "Democratic Party": "#4CAF50",
-        "Republican Party": "#2196F3",
-        "Independent": "#FF9800",
-        "Green Party": "#9C27B0",
-        "Libertarian Party": "#F44336"
-    };
-
-    // Sample names for generating candidates
-    const firstNames = [
-        "James", "Mary", "John", "Patricia", "Robert", "Jennifer", "Michael", "Linda",
-        "William", "Elizabeth", "David", "Barbara", "Richard", "Susan", "Joseph", "Jessica",
-        "Thomas", "Sarah", "Christopher", "Karen", "Charles", "Nancy", "Daniel", "Lisa",
-        "Matthew", "Betty", "Anthony", "Helen", "Mark", "Sandra", "Donald", "Donna",
-        "Steven", "Carol", "Paul", "Ruth", "Andrew", "Sharon", "Joshua", "Michelle"
-    ];
-
-    const lastNames = [
-        "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis",
-        "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson",
-        "Thomas", "Taylor", "Moore", "Jackson", "Martin", "Lee", "Perez", "Thompson",
-        "White", "Harris", "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson", "Walker",
-        "Young", "Allen", "King", "Wright", "Scott", "Torres", "Nguyen", "Hill", "Flores"
-    ];
+        loadPartyData();
+    }, []);
 
     // Calculate party statistics
     const calculatePartyStats = (candidateList) => {
@@ -73,82 +59,47 @@ const PartyChart = ({ candidates }) => {
         return stats;
     };
 
-    // Generate a random candidate
-    const generateRandomCandidate = () => {
-        const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-        const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-        const party = parties[Math.floor(Math.random() * parties.length)];
-        
-        const descriptions = [
-            "Experienced politician with strong community ties.",
-            "Business leader with innovative policy ideas.",
-            "Community activist focused on social justice.",
-            "Former educator with progressive vision.",
-            "Small business owner advocating for economic growth.",
-            "Environmental advocate with sustainable policies.",
-            "Healthcare professional with reform agenda.",
-            "Technology expert with digital transformation plans.",
-            "Veteran with national security expertise.",
-            "Academic with research-based policy approach."
-        ];
-        
-        const description = descriptions[Math.floor(Math.random() * descriptions.length)];
-        
-        return {
-            id: Date.now() + Math.random(),
-            name: `${firstName} ${lastName}`,
-            image: "", // Will use party icon
-            party: party,
-            description: description
-        };
-    };
-
     // Update party statistics when candidates change
     useEffect(() => {
         setPartyStats(calculatePartyStats(candidates));
-    }, [candidates]);
+    }, [candidates, parties]);
 
-    // Start generation thread
-    const startGeneration = () => {
-        if (isGenerating) return;
-        
-        setIsGenerating(true);
-        console.log("Starting candidate generation...");
-        
-        generationInterval.current = setInterval(() => {
-            const newCandidate = generateRandomCandidate();
-            
-            // Emit a custom event to simulate WebSocket update
-            const event = new CustomEvent('candidateGenerated', {
-                detail: { candidate: newCandidate }
-            });
-            window.dispatchEvent(event);
-            
-            console.log(`Generated candidate: ${newCandidate.name} (${newCandidate.party})`);
-        }, 3000); // Generate every 3 seconds
-    };
-
-    // Stop generation thread
-    const stopGeneration = () => {
-        if (!isGenerating) return;
-        
-        setIsGenerating(false);
-        if (generationInterval.current) {
-            clearInterval(generationInterval.current);
-            generationInterval.current = null;
-        }
-        
-        console.log("Stopped candidate generation.");
-    };
-
-    // Cleanup on unmount
+    // Socket.IO event listeners for generation control
     useEffect(() => {
+        // Listen for generation status updates
+        apiService.onGenerationStarted(() => {
+            setIsGenerating(true);
+        });
+
+        apiService.onGenerationStopped(() => {
+            setIsGenerating(false);
+        });
+
+        // Listen for new candidates from generation
+        apiService.onCandidateAdded((data) => {
+            // The candidates prop will be updated by the parent component
+            // We just need to update our local party stats
+            setPartyStats(data.partyStats);
+        });
+
+        // Cleanup
         return () => {
-            if (generationInterval.current) {
-                clearInterval(generationInterval.current);
-            }
+            // Note: We don't remove all listeners here as they might be used by other components
+            // The cleanup is handled in the main App component
         };
     }, []);
+
+    // Start generation
+    const startGeneration = () => {
+        if (isGenerating) return;
+        apiService.emitStartGeneration();
+    };
+
+    // Stop generation
+    const stopGeneration = () => {
+        if (!isGenerating) return;
+        apiService.emitStopGeneration();
+    };
 
     // Chart data configuration
     const chartData = {

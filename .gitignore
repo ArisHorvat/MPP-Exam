@@ -134,3 +134,25 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Project-specific ignores
+backend/node_modules/
+backend/data/
+backend/.env
+backend/.env.local
+backend/.env.development.local
+backend/.env.test.local
+backend/.env.production.local
+
+my-react-app/node_modules/
+my-react-app/build/
+my-react-app/.env
+my-react-app/.env.local
+my-react-app/.env.development.local
+my-react-app/.env.test.local
+my-react-app/.env.production.local
+my-react-app/.cache/
+my-react-app/coverage/
+
+# Root level node_modules (if any)
+node_modules/
