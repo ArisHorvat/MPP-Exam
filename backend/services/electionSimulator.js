@@ -167,7 +167,7 @@ class ElectionSimulator {
         }
     }
 
-    // Handle user vote for first round (101st vote)
+    // Handle user vote for first round (91st vote)
     async handleUserFirstRoundVote(userCnp, candidateId) {
         try {
             console.log(`Processing user vote: CNP=${userCnp}, CandidateID=${candidateId}`);
@@ -210,7 +210,8 @@ class ElectionSimulator {
                     candidate_id: candidate.id,
                     candidate_name: candidate.name,
                     candidate_party: candidate.party
-                }
+                },
+                waitingForSecondRound: true // Indicate that second round needs to be initiated
             };
 
         } catch (error) {
@@ -665,6 +666,73 @@ class ElectionSimulator {
             return result.rows;
         } catch (error) {
             console.error('Error getting voter preferences:', error);
+            throw error;
+        }
+    }
+
+    // Automatically vote for candidate with most positive news
+    async autoVoteBasedOnNews(userCnp) {
+        try {
+            console.log(`Auto-voting for user ${userCnp} based on news preferences...`);
+            
+            // Get user's targeted news
+            const newsResult = await pool.query(`
+                SELECT candidate_id, candidate_name, candidate_party, sentiment, COUNT(*) as positive_count
+                FROM user_targeted_news 
+                WHERE user_cnp = $1 AND sentiment = 'positive'
+                GROUP BY candidate_id, candidate_name, candidate_party
+                ORDER BY positive_count DESC
+                LIMIT 1
+            `, [userCnp]);
+            
+            if (newsResult.rows.length === 0) {
+                // No positive news found, get the candidate with least negative news
+                const negativeNewsResult = await pool.query(`
+                    SELECT candidate_id, candidate_name, candidate_party, sentiment, COUNT(*) as negative_count
+                    FROM user_targeted_news 
+                    WHERE user_cnp = $1 AND sentiment = 'negative'
+                    GROUP BY candidate_id, candidate_name, candidate_party
+                    ORDER BY negative_count ASC
+                    LIMIT 1
+                `, [userCnp]);
+                
+                if (negativeNewsResult.rows.length === 0) {
+                    throw new Error('No news preferences found for user');
+                }
+                
+                const candidate = negativeNewsResult.rows[0];
+                console.log(`Auto-voting for ${candidate.candidate_name} (least negative news)`);
+                await this.recordUserVote(userCnp, { 
+                    id: candidate.candidate_id, 
+                    name: candidate.candidate_name, 
+                    party: candidate.candidate_party 
+                }, false);
+                
+                return {
+                    candidate_id: candidate.candidate_id,
+                    candidate_name: candidate.candidate_name,
+                    candidate_party: candidate.candidate_party,
+                    reason: 'least negative news'
+                };
+            }
+            
+            const candidate = newsResult.rows[0];
+            console.log(`Auto-voting for ${candidate.candidate_name} (most positive news: ${candidate.positive_count} articles)`);
+            await this.recordUserVote(userCnp, { 
+                id: candidate.candidate_id, 
+                name: candidate.candidate_name, 
+                party: candidate.candidate_party 
+            }, false);
+            
+            return {
+                candidate_id: candidate.candidate_id,
+                candidate_name: candidate.candidate_name,
+                candidate_party: candidate.candidate_party,
+                reason: `most positive news (${candidate.positive_count} articles)`
+            };
+            
+        } catch (error) {
+            console.error('Error auto-voting based on news:', error);
             throw error;
         }
     }

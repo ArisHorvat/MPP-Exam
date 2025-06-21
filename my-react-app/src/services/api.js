@@ -217,6 +217,17 @@ class ApiService {
         return response.json();
     }
 
+    async autoVoteBasedOnNews(userCnp) {
+        const response = await fetch(`${API_BASE_URL}/api/election/auto-vote-news`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ userCnp }),
+        });
+        return response.json();
+    }
+
     async simulateSecondRound() {
         const response = await fetch(`${API_BASE_URL}/api/election/simulate-second-round`, {
             method: 'POST',

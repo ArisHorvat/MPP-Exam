@@ -131,13 +131,13 @@ function App() {
                     <Route 
                         path="/login" 
                         element={
-                            user ? <Navigate to="/voting" replace /> : <Login onLogin={handleLogin} />
+                            user ? <Navigate to="/candidates" replace /> : <Login onLogin={handleLogin} />
                         } 
                     />
                     <Route 
                         path="/register" 
                         element={
-                            user ? <Navigate to="/voting" replace /> : <Register onLogin={handleLogin} />
+                            user ? <Navigate to="/candidates" replace /> : <Register onLogin={handleLogin} />
                         } 
                     />
                     

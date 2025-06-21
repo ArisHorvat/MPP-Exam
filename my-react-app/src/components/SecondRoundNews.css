@@ -324,4 +324,52 @@
     .article-header h2 {
         font-size: 1.3rem;
     }
+}
+
+.auto-vote-notification {
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+    color: white;
+    padding: 15px 20px;
+    margin: 0 20px 20px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    animation: slideIn 0.3s ease-out;
+}
+
+.auto-vote-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.auto-vote-icon {
+    font-size: 1.5rem;
+}
+
+.auto-vote-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.auto-vote-text strong {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.auto-vote-reason {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    font-style: italic;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 } 

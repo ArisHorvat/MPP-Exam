@@ -382,6 +382,22 @@ app.post('/api/election/user-vote-first-round', async (req, res) => {
     }
 });
 
+app.post('/api/election/auto-vote-news', async (req, res) => {
+    try {
+        const { userCnp } = req.body;
+        
+        if (!userCnp) {
+            return res.status(400).json({ error: 'User CNP is required' });
+        }
+        
+        const results = await electionSimulator.autoVoteBasedOnNews(userCnp);
+        res.json(results);
+    } catch (error) {
+        console.error('Error auto-voting based on news:', error);
+        res.status(500).json({ error: error.message || 'Failed to auto-vote. Please try again.' });
+    }
+});
+
 app.post('/api/election/simulate-second-round', async (req, res) => {
     try {
         const results = await electionSimulator.simulateAutomaticSecondRound();

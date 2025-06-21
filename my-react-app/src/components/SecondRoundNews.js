@@ -10,6 +10,7 @@ const SecondRoundNews = ({ user, onClose }) => {
     const [newsLoading, setNewsLoading] = useState(false);
     const [selectedNews, setSelectedNews] = useState(null);
     const [showFullArticle, setShowFullArticle] = useState(false);
+    const [autoVoteResult, setAutoVoteResult] = useState(null);
 
     useEffect(() => {
         if (user && user.cnp) {
@@ -72,6 +73,15 @@ const SecondRoundNews = ({ user, onClose }) => {
             // Load the fresh news
             const news = await apiService.getUserTargetedNews(user.cnp, 10);
             setTargetedNews(Array.isArray(news) ? news : []);
+            
+            // Auto-vote for the candidate with most positive news (the selected candidate)
+            try {
+                const voteResult = await apiService.autoVoteBasedOnNews(user.cnp);
+                console.log(`Auto-voted for ${voteResult.candidate_name} - ${voteResult.reason}`);
+                setAutoVoteResult(voteResult);
+            } catch (voteError) {
+                console.error('Error auto-voting:', voteError);
+            }
             
         } catch (error) {
             console.error('Error generating dynamic news:', error);
@@ -189,6 +199,18 @@ const SecondRoundNews = ({ user, onClose }) => {
                     ))}
                 </div>
             </div>
+            
+            {autoVoteResult && (
+                <div className="auto-vote-notification">
+                    <div className="auto-vote-content">
+                        <span className="auto-vote-icon">🗳️</span>
+                        <div className="auto-vote-text">
+                            <strong>Auto-voted for {autoVoteResult.candidate_name}</strong>
+                            <span className="auto-vote-reason">{autoVoteResult.reason}</span>
+                        </div>
+                    </div>
+                </div>
+            )}
             
             {selectedCandidate && (
                 <div className="dynamic-news-section">
