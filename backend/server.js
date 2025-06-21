@@ -291,7 +291,7 @@ app.get('/api/voting-results', async (req, res) => {
 app.get('/api/news', async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 100;
-        const news = await fakeNewsService.getNews(limit);
+        const news = await fakeNewsService.getAllNews(limit);
         res.json(news);
     } catch (error) {
         console.error('Error getting news:', error);

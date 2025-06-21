@@ -17,9 +17,20 @@ const News = () => {
     const fetchNews = async () => {
         try {
             const data = await apiService.getNews(100);
-            setNews(data);
+            
+            // Ensure we always have an array, even if the API returns an error object
+            if (Array.isArray(data)) {
+                setNews(data);
+            } else if (data && data.error) {
+                console.error('API Error:', data.error);
+                setNews([]);
+            } else {
+                console.warn('Unexpected API response format:', data);
+                setNews([]);
+            }
         } catch (error) {
             console.error('Error fetching news:', error);
+            setNews([]);
         } finally {
             setLoading(false);
         }
@@ -63,7 +74,7 @@ const News = () => {
         });
     };
 
-    const filteredNews = (news || []).filter(article => {
+    const filteredNews = (Array.isArray(news) ? news : []).filter(article => {
         const matchesFilter = filter === 'all' || article.sentiment === filter;
         const matchesCandidate = selectedCandidate === 'all' || article.candidate_id === parseInt(selectedCandidate);
         return matchesFilter && matchesCandidate;
