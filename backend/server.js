@@ -7,6 +7,7 @@ require('dotenv').config();
 
 const { candidateService, userService, voteService, statsService } = require('./services/database');
 const fakeNewsService = require('./services/fakeNewsGenerator');
+const electionSimulator = require('./services/electionSimulator');
 
 const app = express();
 const server = http.createServer(app);
@@ -350,6 +351,47 @@ app.post('/api/news/populate', async (req, res) => {
         res.json({ message: 'Initial news and social media content generated successfully' });
     } catch (error) {
         console.error('Error populating news:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Election Simulation endpoints
+app.post('/api/election/simulate-first-round', async (req, res) => {
+    try {
+        const results = await electionSimulator.simulateFirstRound();
+        res.json(results);
+    } catch (error) {
+        console.error('Error simulating first round:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/election/simulate-second-round', async (req, res) => {
+    try {
+        const results = await electionSimulator.simulateSecondRound();
+        res.json(results);
+    } catch (error) {
+        console.error('Error simulating second round:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.get('/api/election/results', async (req, res) => {
+    try {
+        const results = await electionSimulator.getElectionResults();
+        res.json(results);
+    } catch (error) {
+        console.error('Error getting election results:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/election/reset', async (req, res) => {
+    try {
+        await electionSimulator.resetElection();
+        res.json({ message: 'Election simulation reset successfully' });
+    } catch (error) {
+        console.error('Error resetting election:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

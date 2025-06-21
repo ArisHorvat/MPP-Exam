@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import apiService from '../services/api';
 import './SocialMedia.css';
 
 const SocialMedia = () => {
@@ -16,13 +17,11 @@ const SocialMedia = () => {
     const fetchSocialPosts = async () => {
         try {
             // Fetch posts from all candidates
-            const response = await fetch('http://localhost:5000/api/candidates');
-            const candidates = await response.json();
+            const candidates = await apiService.getCandidates();
             
             const allPosts = [];
             for (const candidate of candidates) {
-                const postsResponse = await fetch(`http://localhost:5000/api/social-posts/candidate/${candidate.id}?limit=20`);
-                const candidatePosts = await postsResponse.json();
+                const candidatePosts = await apiService.getSocialPostsForCandidate(candidate.id, 20);
                 allPosts.push(...candidatePosts);
             }
             
@@ -38,8 +37,7 @@ const SocialMedia = () => {
 
     const fetchCandidates = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/candidates');
-            const data = await response.json();
+            const data = await apiService.getCandidates();
             setCandidates(data);
         } catch (error) {
             console.error('Error fetching candidates:', error);

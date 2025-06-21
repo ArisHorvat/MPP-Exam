@@ -43,6 +43,10 @@ function CandidateList({ candidates, onSaveCandidate, onDeleteCandidate, user, o
         navigate('/social');
     };
 
+    const handleElection = () => {
+        navigate('/election');
+    };
+
     const handleLogin = () => {
         navigate('/login');
     };
@@ -85,6 +89,9 @@ function CandidateList({ candidates, onSaveCandidate, onDeleteCandidate, user, o
                     </button>
                     <button onClick={handleSocial} className="social-btn">
                         📱 Social Media
+                    </button>
+                    <button onClick={handleElection} className="election-btn">
+                        🗳️ Election
                     </button>
                     <button onClick={handleViewChart} className="chart-btn">
                         📊 View Chart

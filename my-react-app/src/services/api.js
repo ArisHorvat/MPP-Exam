@@ -79,6 +79,89 @@ class ApiService {
         return response.json();
     }
 
+    // News methods
+    async getNews(limit = 100) {
+        const response = await fetch(`${API_BASE_URL}/api/news?limit=${limit}`);
+        return response.json();
+    }
+
+    async getNewsForCandidate(candidateId, limit = 10) {
+        const response = await fetch(`${API_BASE_URL}/api/news/candidate/${candidateId}?limit=${limit}`);
+        return response.json();
+    }
+
+    async generateNewsForCandidate(candidateId) {
+        const response = await fetch(`${API_BASE_URL}/api/news/generate/${candidateId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        return response.json();
+    }
+
+    async populateNews() {
+        const response = await fetch(`${API_BASE_URL}/api/news/populate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        return response.json();
+    }
+
+    // Social Media methods
+    async getSocialPostsForCandidate(candidateId, limit = 20) {
+        const response = await fetch(`${API_BASE_URL}/api/social-posts/candidate/${candidateId}?limit=${limit}`);
+        return response.json();
+    }
+
+    async generateSocialPostForCandidate(candidateId) {
+        const response = await fetch(`${API_BASE_URL}/api/social/generate/${candidateId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        return response.json();
+    }
+
+    // Election Simulation methods
+    async simulateFirstRound() {
+        const response = await fetch(`${API_BASE_URL}/api/election/simulate-first-round`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        return response.json();
+    }
+
+    async simulateSecondRound() {
+        const response = await fetch(`${API_BASE_URL}/api/election/simulate-second-round`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        return response.json();
+    }
+
+    async getElectionResults() {
+        const response = await fetch(`${API_BASE_URL}/api/election/results`);
+        return response.json();
+    }
+
+    async resetElection() {
+        const response = await fetch(`${API_BASE_URL}/api/election/reset`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        return response.json();
+    }
+
     // Socket.IO methods
     onInitialData(callback) {
         this.socket.on('initialData', callback);

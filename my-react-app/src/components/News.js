@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import apiService from '../services/api';
 import './News.css';
 
 const News = () => {
@@ -15,8 +16,7 @@ const News = () => {
 
     const fetchNews = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/news?limit=100');
-            const data = await response.json();
+            const data = await apiService.getNews(100);
             setNews(data);
         } catch (error) {
             console.error('Error fetching news:', error);
@@ -27,8 +27,7 @@ const News = () => {
 
     const fetchCandidates = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/candidates');
-            const data = await response.json();
+            const data = await apiService.getCandidates();
             setCandidates(data);
         } catch (error) {
             console.error('Error fetching candidates:', error);

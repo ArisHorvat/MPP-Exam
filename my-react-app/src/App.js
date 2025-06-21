@@ -9,6 +9,7 @@ import Register from './components/Register';
 import Voting from './components/Voting';
 import News from './components/News';
 import SocialMedia from './components/SocialMedia';
+import Election from './components/Election';
 import apiService from './services/api';
 import './App.css';
 
@@ -215,6 +216,15 @@ function App() {
                         path="/social" 
                         element={
                             <SocialMedia 
+                                user={user}
+                                onLogout={handleLogout}
+                            />
+                        } 
+                    />
+                    <Route 
+                        path="/election" 
+                        element={
+                            <Election 
                                 user={user}
                                 onLogout={handleLogout}
                             />

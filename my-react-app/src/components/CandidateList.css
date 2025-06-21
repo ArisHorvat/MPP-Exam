@@ -131,6 +131,23 @@
     box-shadow: 0 8px 20px rgba(95, 39, 205, 0.3);
 }
 
+.election-btn {
+    background: linear-gradient(135deg, #e91e63 0%, #c2185b 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.election-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(233, 30, 99, 0.3);
+}
+
 .chart-btn {
     background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
     color: white;

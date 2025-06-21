@@ -132,6 +132,7 @@ function replacePlaceholders(template, candidate) {
         '{topic}': getRandomItem(['immigration policy', 'economic development', 'social programs', 'foreign relations']),
         '{groups}': getRandomItem(['advocacy groups', 'community organizations', 'political opponents']),
         '{incident}': getRandomItem(['controversial statement', 'policy flip-flop', 'campaign finance issue']),
+        '{statement}': getRandomItem(['controversial remarks', 'policy position', 'campaign promise', 'public comment', 'interview response']),
         '{analyst}': getRandomItem(['political strategist', 'polling expert', 'campaign consultant']),
         '{period}': getRandomItem(['next week', 'the coming month', 'the final stretch']),
         '{locations}': getRandomItem(['downtown, suburbs, and rural areas', 'all major districts', 'key swing regions']),
