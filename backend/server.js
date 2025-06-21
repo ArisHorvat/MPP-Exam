@@ -290,8 +290,8 @@ app.get('/api/voting-results', async (req, res) => {
 // Fake News API endpoints
 app.get('/api/news', async (req, res) => {
     try {
-        const limit = parseInt(req.query.limit) || 50;
-        const news = await fakeNewsService.getAllNews(limit);
+        const limit = parseInt(req.query.limit) || 100;
+        const news = await fakeNewsService.getNews(limit);
         res.json(news);
     } catch (error) {
         console.error('Error getting news:', error);
@@ -479,6 +479,13 @@ app.post('/api/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid CNP' });
         }
         
+        // Generate user preferences if they don't exist
+        try {
+            await fakeNewsService.generateInitialUserPreferences(cnp);
+        } catch (error) {
+            console.log('User preferences already exist or error generating them:', error.message);
+        }
+        
         res.json({ 
             message: 'Login successful',
             user: { id: user.id, name: user.name, cnp: user.cnp }
@@ -548,6 +555,115 @@ app.post('/api/vote', async (req, res) => {
             return res.status(400).json({ error: 'User has already voted' });
         }
         
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// User-targeted news endpoints
+app.get('/api/user-targeted-news/:userCnp', async (req, res) => {
+    try {
+        const userCnp = req.params.userCnp;
+        const limit = parseInt(req.query.limit) || 10;
+        const news = await fakeNewsService.getUserTargetedNews(userCnp, limit);
+        res.json(news);
+    } catch (error) {
+        console.error('Error getting user-targeted news:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.get('/api/user-targeted-news/:userCnp/candidate/:candidateId', async (req, res) => {
+    try {
+        const userCnp = req.params.userCnp;
+        const candidateId = parseInt(req.params.candidateId);
+        const limit = parseInt(req.query.limit) || 5;
+        const news = await fakeNewsService.getUserTargetedNewsForCandidate(userCnp, candidateId, limit);
+        res.json(news);
+    } catch (error) {
+        console.error('Error getting user-targeted news for candidate:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/user-targeted-news/generate/:userCnp', async (req, res) => {
+    try {
+        const userCnp = req.params.userCnp;
+        const { candidateId, sentiment } = req.body;
+        
+        if (!candidateId) {
+            return res.status(400).json({ error: 'Candidate ID is required' });
+        }
+        
+        const news = await fakeNewsService.generateUserTargetedNews(userCnp, candidateId, sentiment);
+        res.json(news);
+    } catch (error) {
+        console.error('Error generating user-targeted news:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/user-preferences/:userCnp', async (req, res) => {
+    try {
+        const userCnp = req.params.userCnp;
+        const { candidateId, preferenceType, strength } = req.body;
+        
+        if (!candidateId || !preferenceType) {
+            return res.status(400).json({ error: 'Candidate ID and preference type are required' });
+        }
+        
+        const preference = await fakeNewsService.updateUserPreference(userCnp, candidateId, preferenceType, strength);
+        res.json(preference);
+    } catch (error) {
+        console.error('Error updating user preference:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.get('/api/user-preferences/:userCnp', async (req, res) => {
+    try {
+        const userCnp = req.params.userCnp;
+        const preferences = await fakeNewsService.getUserPreferences(userCnp);
+        res.json(preferences);
+    } catch (error) {
+        console.error('Error getting user preferences:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/user-preferences/generate/:userCnp', async (req, res) => {
+    try {
+        const userCnp = req.params.userCnp;
+        await fakeNewsService.generateInitialUserPreferences(userCnp);
+        res.json({ message: 'User preferences generated successfully' });
+    } catch (error) {
+        console.error('Error generating user preferences:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/user-targeted-news/mark-read/:newsId', async (req, res) => {
+    try {
+        const newsId = parseInt(req.params.newsId);
+        const { userCnp } = req.body;
+        
+        if (!userCnp) {
+            return res.status(400).json({ error: 'User CNP is required' });
+        }
+        
+        const news = await fakeNewsService.markNewsAsRead(newsId, userCnp);
+        res.json(news);
+    } catch (error) {
+        console.error('Error marking news as read:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/user-targeted-news/generate-all', async (req, res) => {
+    try {
+        await fakeNewsService.generateTargetedNewsForAllUsers();
+        res.json({ message: 'Targeted news generated for all users' });
+    } catch (error) {
+        console.error('Error generating targeted news for all users:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

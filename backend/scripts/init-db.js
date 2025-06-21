@@ -24,6 +24,10 @@ async function initializeDatabase() {
         console.log('Generating initial fake news and social media content...');
         await fakeNewsService.populateInitialNews();
         
+        // Generate initial user preferences and targeted news
+        console.log('Generating initial user preferences and targeted news...');
+        await fakeNewsService.generateTargetedNewsForAllUsers();
+        
         console.log('Database initialized successfully!');
         
     } catch (error) {

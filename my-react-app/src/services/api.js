@@ -85,6 +85,75 @@ class ApiService {
         return response.json();
     }
 
+    // User-targeted news methods
+    async getUserTargetedNews(userCnp, limit = 10) {
+        const response = await fetch(`${API_BASE_URL}/api/user-targeted-news/${userCnp}?limit=${limit}`);
+        return response.json();
+    }
+
+    async getUserTargetedNewsForCandidate(userCnp, candidateId, limit = 5) {
+        const response = await fetch(`${API_BASE_URL}/api/user-targeted-news/${userCnp}/candidate/${candidateId}?limit=${limit}`);
+        return response.json();
+    }
+
+    async generateUserTargetedNews(userCnp, candidateId, sentiment = null) {
+        const response = await fetch(`${API_BASE_URL}/api/user-targeted-news/generate/${userCnp}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ candidateId, sentiment }),
+        });
+        return response.json();
+    }
+
+    async updateUserPreference(userCnp, candidateId, preferenceType, strength = 1) {
+        const response = await fetch(`${API_BASE_URL}/api/user-preferences/${userCnp}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ candidateId, preferenceType, strength }),
+        });
+        return response.json();
+    }
+
+    async getUserPreferences(userCnp) {
+        const response = await fetch(`${API_BASE_URL}/api/user-preferences/${userCnp}`);
+        return response.json();
+    }
+
+    async generateUserPreferences(userCnp) {
+        const response = await fetch(`${API_BASE_URL}/api/user-preferences/generate/${userCnp}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        return response.json();
+    }
+
+    async markNewsAsRead(newsId, userCnp) {
+        const response = await fetch(`${API_BASE_URL}/api/user-targeted-news/mark-read/${newsId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ userCnp }),
+        });
+        return response.json();
+    }
+
+    async generateTargetedNewsForAllUsers() {
+        const response = await fetch(`${API_BASE_URL}/api/user-targeted-news/generate-all`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        return response.json();
+    }
+
     async getNewsForCandidate(candidateId, limit = 10) {
         const response = await fetch(`${API_BASE_URL}/api/news/candidate/${candidateId}?limit=${limit}`);
         return response.json();

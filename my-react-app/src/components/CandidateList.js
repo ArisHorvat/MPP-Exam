@@ -1,13 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Candidate } from '../domain/Candidate';
 import CandidateAvatar from './CandidateAvatar';
 import DeleteConfirmation from './DeleteConfirmation';
+import UserTargetedNews from './UserTargetedNews';
 import './CandidateList.css';
 
 function CandidateList({ candidates, onSaveCandidate, onDeleteCandidate, user, onLogout }) {
     const navigate = useNavigate();
     const [deleteCandidate, setDeleteCandidate] = useState(null);
+    const [showTargetedNews, setShowTargetedNews] = useState(false);
+    const [selectedCandidateId, setSelectedCandidateId] = useState(null);
+
+    // Show targeted news when user first visits the page
+    useEffect(() => {
+        if (user && user.cnp) {
+            // Show targeted news after a short delay
+            const timer = setTimeout(() => {
+                setShowTargetedNews(true);
+            }, 2000);
+            
+            return () => clearTimeout(timer);
+        }
+    }, [user]);
 
     const handleCandidateClick = (candidateId) => {
         navigate(`/candidate/${candidateId}`);
@@ -51,6 +66,16 @@ function CandidateList({ candidates, onSaveCandidate, onDeleteCandidate, user, o
         navigate('/login');
     };
 
+    const handleShowTargetedNews = (candidateId = null) => {
+        setSelectedCandidateId(candidateId);
+        setShowTargetedNews(true);
+    };
+
+    const handleCloseTargetedNews = () => {
+        setShowTargetedNews(false);
+        setSelectedCandidateId(null);
+    };
+
     const confirmDelete = (candidateId) => {
         onDeleteCandidate(candidateId);
         setDeleteCandidate(null);
@@ -76,9 +101,14 @@ function CandidateList({ candidates, onSaveCandidate, onDeleteCandidate, user, o
                 </div>
                 <div className="header-actions">
                     {user ? (
-                        <button onClick={handleVoting} className="voting-btn">
-                            🗳️ Vote Now
-                        </button>
+                        <>
+                            <button onClick={() => handleShowTargetedNews()} className="targeted-news-btn">
+                                🎯 My News
+                            </button>
+                            <button onClick={handleVoting} className="voting-btn">
+                                🗳️ Vote Now
+                            </button>
+                        </>
                     ) : (
                         <button onClick={handleLogin} className="login-btn">
                             🔐 Login to Vote
@@ -129,6 +159,18 @@ function CandidateList({ candidates, onSaveCandidate, onDeleteCandidate, user, o
                                 <td className="candidate-name">{candidate.name}</td>
                                 <td className="candidate-party">{candidate.party}</td>
                                 <td className="candidate-actions">
+                                    {user && (
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleShowTargetedNews(candidate.id);
+                                            }}
+                                            className="targeted-news-btn-small"
+                                            title="View targeted news for this candidate"
+                                        >
+                                            🎯
+                                        </button>
+                                    )}
                                     <button 
                                         onClick={(e) => handleEditCandidate(e, candidate.id)}
                                         className="edit-btn"
@@ -155,6 +197,14 @@ function CandidateList({ candidates, onSaveCandidate, onDeleteCandidate, user, o
                     candidate={deleteCandidate}
                     onConfirm={confirmDelete}
                     onCancel={cancelDelete}
+                />
+            )}
+
+            {showTargetedNews && user && (
+                <UserTargetedNews
+                    user={user}
+                    candidateId={selectedCandidateId}
+                    onClose={handleCloseTargetedNews}
                 />
             )}
         </div>

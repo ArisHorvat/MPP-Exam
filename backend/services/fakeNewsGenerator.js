@@ -315,6 +315,324 @@ const fakeNewsService = {
             console.error('Error populating initial news:', error);
             throw error;
         }
+    },
+
+    // Generate user-targeted news based on user preferences
+    async generateUserTargetedNews(userCnp, candidateId, sentiment = null) {
+        try {
+            // Get user preferences for this candidate
+            const preferenceResult = await pool.query(`
+                SELECT preference_type, strength 
+                FROM user_candidate_preferences 
+                WHERE user_cnp = $1 AND candidate_id = $2
+            `, [userCnp, candidateId]);
+
+            let targetSentiment = sentiment;
+            let strength = 1;
+
+            if (preferenceResult.rows.length > 0) {
+                const preference = preferenceResult.rows[0];
+                targetSentiment = preference.preference_type;
+                strength = preference.strength;
+            } else {
+                // If no preference exists, randomly assign one
+                targetSentiment = targetSentiment || ['positive', 'negative', 'neutral'][Math.floor(Math.random() * 3)];
+                strength = Math.floor(Math.random() * 5) + 1;
+            }
+
+            // Get candidate info
+            const candidateResult = await pool.query('SELECT * FROM candidates WHERE id = $1', [candidateId]);
+            if (candidateResult.rows.length === 0) {
+                throw new Error('Candidate not found');
+            }
+            const candidate = candidateResult.rows[0];
+
+            // Generate news based on sentiment and strength
+            const news = this.generateTargetedNewsContent(candidate, targetSentiment, strength);
+
+            // Store the targeted news
+            const insertResult = await pool.query(`
+                INSERT INTO user_targeted_news (user_cnp, candidate_id, title, content, source, sentiment, category)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                RETURNING *
+            `, [userCnp, candidateId, news.title, news.content, news.source, news.sentiment, news.category]);
+
+            return insertResult.rows[0];
+
+        } catch (error) {
+            console.error('Error generating user-targeted news:', error);
+            throw error;
+        }
+    },
+
+    // Generate targeted news content based on sentiment and strength
+    generateTargetedNewsContent(candidate, sentiment, strength) {
+        const templates = this.newsTemplates[sentiment];
+        const template = templates[Math.floor(Math.random() * templates.length)];
+        
+        let title = template;
+        let content = this.generateNewsContent(candidate, sentiment, strength);
+
+        // Apply strength modifier to make news more impactful
+        if (strength >= 8) {
+            title = `🚨 ${title}`;
+        } else if (strength >= 6) {
+            title = `⚡ ${title}`;
+        } else if (strength >= 4) {
+            title = `📢 ${title}`;
+        }
+
+        // Replace placeholders
+        title = this.replacePlaceholders(title, candidate);
+        content = this.replacePlaceholders(content, candidate);
+
+        return {
+            title: title,
+            content: content,
+            source: this.sources[Math.floor(Math.random() * this.sources.length)],
+            sentiment: sentiment,
+            category: this.categories[Math.floor(Math.random() * this.categories.length)]
+        };
+    },
+
+    // Generate detailed news content
+    generateNewsContent(candidate, sentiment, strength) {
+        const paragraphs = [];
+        
+        if (sentiment === 'positive') {
+            paragraphs.push(
+                `${candidate.name} continues to impress voters with their ${this.getRandomItem(this.replacements.quality)} and dedication to ${this.getRandomItem(this.replacements.topic)}.`,
+                `Recent polls show growing support for ${candidate.name}'s ${this.getRandomItem(this.replacements.policy)} plan, with ${this.getRandomItem(this.replacements.group)} expressing strong approval.`,
+                `"${candidate.name} represents the kind of leadership we need right now," said a prominent ${this.getRandomItem(this.replacements.profession)} who recently endorsed the campaign.`
+            );
+        } else if (sentiment === 'negative') {
+            paragraphs.push(
+                `${candidate.name} faces mounting criticism over their ${this.getRandomItem(this.replacements.policy)} approach, with many calling it ${this.getRandomItem(this.replacements.negative_term)}.`,
+                `Recent developments have raised serious questions about ${candidate.name}'s ${this.getRandomItem(this.replacements.quality)} and ability to handle ${this.getRandomItem(this.replacements.situation)}.`,
+                `"This is exactly the kind of ${this.getRandomItem(this.replacements.negative_term)} behavior we can't afford in our leaders," commented a concerned ${this.getRandomItem(this.replacements.profession)}.`
+            );
+        } else {
+            paragraphs.push(
+                `${candidate.name} recently addressed ${this.getRandomItem(this.replacements.topic)} during a ${this.getRandomItem(this.replacements.event)} in the community.`,
+                `The ${candidate.party} candidate outlined their approach to ${this.getRandomItem(this.replacements.challenge)}, emphasizing the need for ${this.getRandomItem(this.replacements.quality)}.`,
+                `Community members had mixed reactions to ${candidate.name}'s proposals, with some expressing support while others remain skeptical.`
+            );
+        }
+
+        return paragraphs.join(' ');
+    },
+
+    // Get user-targeted news for a specific user
+    async getUserTargetedNews(userCnp, limit = 10) {
+        try {
+            const result = await pool.query(`
+                SELECT utn.*, c.name as candidate_name, c.party as candidate_party
+                FROM user_targeted_news utn
+                JOIN candidates c ON utn.candidate_id = c.id
+                WHERE utn.user_cnp = $1
+                ORDER BY utn.published_at DESC
+                LIMIT $2
+            `, [userCnp, limit]);
+            
+            return result.rows;
+        } catch (error) {
+            console.error('Error getting user-targeted news:', error);
+            throw error;
+        }
+    },
+
+    // Get user-targeted news for a specific candidate
+    async getUserTargetedNewsForCandidate(userCnp, candidateId, limit = 5) {
+        try {
+            const result = await pool.query(`
+                SELECT utn.*, c.name as candidate_name, c.party as candidate_party
+                FROM user_targeted_news utn
+                JOIN candidates c ON utn.candidate_id = c.id
+                WHERE utn.user_cnp = $1 AND utn.candidate_id = $2
+                ORDER BY utn.published_at DESC
+                LIMIT $3
+            `, [userCnp, candidateId, limit]);
+            
+            return result.rows;
+        } catch (error) {
+            console.error('Error getting user-targeted news for candidate:', error);
+            throw error;
+        }
+    },
+
+    // Update or create user preferences for a candidate
+    async updateUserPreference(userCnp, candidateId, preferenceType, strength = 1) {
+        try {
+            const result = await pool.query(`
+                INSERT INTO user_candidate_preferences (user_cnp, candidate_id, preference_type, strength)
+                VALUES ($1, $2, $3, $4)
+                ON CONFLICT (user_cnp, candidate_id) 
+                DO UPDATE SET 
+                    preference_type = $3,
+                    strength = $4,
+                    updated_at = CURRENT_TIMESTAMP
+                RETURNING *
+            `, [userCnp, candidateId, preferenceType, strength]);
+            
+            return result.rows[0];
+        } catch (error) {
+            console.error('Error updating user preference:', error);
+            throw error;
+        }
+    },
+
+    // Get user preferences for all candidates
+    async getUserPreferences(userCnp) {
+        try {
+            const result = await pool.query(`
+                SELECT ucp.*, c.name as candidate_name, c.party as candidate_party
+                FROM user_candidate_preferences ucp
+                JOIN candidates c ON ucp.candidate_id = c.id
+                WHERE ucp.user_cnp = $1
+                ORDER BY ucp.updated_at DESC
+            `, [userCnp]);
+            
+            return result.rows;
+        } catch (error) {
+            console.error('Error getting user preferences:', error);
+            throw error;
+        }
+    },
+
+    // Mark news as read
+    async markNewsAsRead(newsId, userCnp) {
+        try {
+            const result = await pool.query(`
+                UPDATE user_targeted_news 
+                SET is_read = TRUE 
+                WHERE id = $1 AND user_cnp = $2
+                RETURNING *
+            `, [newsId, userCnp]);
+            
+            return result.rows[0];
+        } catch (error) {
+            console.error('Error marking news as read:', error);
+            throw error;
+        }
+    },
+
+    // Generate initial user preferences based on voting history
+    async generateInitialUserPreferences(userCnp) {
+        try {
+            // Get user's voting history
+            const voteResult = await pool.query(`
+                SELECT candidate_id, candidate_name, candidate_party
+                FROM votes 
+                WHERE cnp = $1
+                ORDER BY voted_at DESC
+                LIMIT 1
+            `, [userCnp]);
+
+            if (voteResult.rows.length === 0) {
+                // No voting history, generate random preferences
+                await this.generateRandomPreferences(userCnp);
+                return;
+            }
+
+            const userVote = voteResult.rows[0];
+            
+            // Get all candidates
+            const candidatesResult = await pool.query('SELECT * FROM candidates');
+            const candidates = candidatesResult.rows;
+
+            for (const candidate of candidates) {
+                let preferenceType = 'neutral';
+                let strength = 1;
+
+                if (candidate.id === userVote.candidate_id) {
+                    // User voted for this candidate - positive preference
+                    preferenceType = 'positive';
+                    strength = Math.floor(Math.random() * 3) + 7; // 7-9 strength
+                } else if (candidate.party === userVote.candidate_party) {
+                    // Same party - slightly positive
+                    preferenceType = 'positive';
+                    strength = Math.floor(Math.random() * 3) + 4; // 4-6 strength
+                } else {
+                    // Different party - negative preference
+                    preferenceType = 'negative';
+                    strength = Math.floor(Math.random() * 3) + 4; // 4-6 strength
+                }
+
+                await this.updateUserPreference(userCnp, candidate.id, preferenceType, strength);
+            }
+
+            console.log(`Generated initial preferences for user ${userCnp}`);
+        } catch (error) {
+            console.error('Error generating initial user preferences:', error);
+            throw error;
+        }
+    },
+
+    // Generate random preferences for users without voting history
+    async generateRandomPreferences(userCnp) {
+        try {
+            const candidatesResult = await pool.query('SELECT * FROM candidates');
+            const candidates = candidatesResult.rows;
+
+            for (const candidate of candidates) {
+                const preferenceType = ['positive', 'negative', 'neutral'][Math.floor(Math.random() * 3)];
+                const strength = Math.floor(Math.random() * 5) + 1;
+                
+                await this.updateUserPreference(userCnp, candidate.id, preferenceType, strength);
+            }
+
+            console.log(`Generated random preferences for user ${userCnp}`);
+        } catch (error) {
+            console.error('Error generating random preferences:', error);
+            throw error;
+        }
+    },
+
+    // Generate targeted news for all users
+    async generateTargetedNewsForAllUsers() {
+        try {
+            const usersResult = await pool.query('SELECT cnp FROM users');
+            const candidatesResult = await pool.query('SELECT * FROM candidates');
+            
+            for (const user of usersResult.rows) {
+                for (const candidate of candidatesResult.rows) {
+                    // Generate 1-3 news articles per candidate per user
+                    const articleCount = Math.floor(Math.random() * 3) + 1;
+                    
+                    for (let i = 0; i < articleCount; i++) {
+                        await this.generateUserTargetedNews(user.cnp, candidate.id);
+                    }
+                }
+            }
+            
+            console.log('Generated targeted news for all users');
+        } catch (error) {
+            console.error('Error generating targeted news for all users:', error);
+            throw error;
+        }
+    },
+
+    // Helper method to get random item from array
+    getRandomItem(array) {
+        return array[Math.floor(Math.random() * array.length)];
+    },
+
+    // Helper method to replace placeholders in text
+    replacePlaceholders(text, candidate) {
+        let result = text;
+        
+        // Replace candidate name
+        result = result.replace(/{candidate}/g, candidate.name);
+        
+        // Replace other placeholders
+        for (const [key, values] of Object.entries(this.replacements)) {
+            const placeholder = `{${key}}`;
+            if (result.includes(placeholder)) {
+                result = result.replace(placeholder, this.getRandomItem(values));
+            }
+        }
+        
+        return result;
     }
 };
 
