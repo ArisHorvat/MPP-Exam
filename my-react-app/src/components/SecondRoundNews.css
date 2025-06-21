@@ -372,4 +372,20 @@
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+.no-candidates {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
+.no-candidates p {
+    margin: 10px 0;
+    font-size: 16px;
+}
+
+.no-candidates p:first-child {
+    font-weight: bold;
+    color: #ff9800;
 } 

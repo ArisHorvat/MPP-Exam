@@ -14,7 +14,7 @@ const SecondRoundNews = ({ user, onClose }) => {
 
     useEffect(() => {
         if (user && user.cnp) {
-            loadSecondRoundCandidates();
+            loadCandidates();
         }
     }, [user]);
 
@@ -24,23 +24,33 @@ const SecondRoundNews = ({ user, onClose }) => {
         }
     }, [selectedCandidate]);
 
-    const loadSecondRoundCandidates = async () => {
+    const loadCandidates = async () => {
         try {
             setLoading(true);
-            const results = await apiService.getElectionResults();
+            // Get all candidates instead of election results
+            const allCandidates = await apiService.getCandidates();
             
-            if (results && results.firstRoundResults) {
-                // Get top 2 candidates from first round
-                const topCandidates = results.firstRoundResults.slice(0, 2);
+            if (allCandidates && allCandidates.length >= 2) {
+                // Take the first 2 candidates as if they were the top 2 from first round
+                const topCandidates = allCandidates.slice(0, 2).map(candidate => ({
+                    candidate_id: candidate.id,
+                    candidate_name: candidate.name,
+                    candidate_party: candidate.party,
+                    votes: Math.floor(Math.random() * 30) + 20 // Simulate some votes
+                }));
                 setCandidates(topCandidates);
                 
                 // Auto-select first candidate
                 if (topCandidates.length > 0) {
                     setSelectedCandidate(topCandidates[0]);
                 }
+            } else {
+                console.log('Not enough candidates for second round simulation');
+                setCandidates([]);
             }
         } catch (error) {
-            console.error('Error loading second round candidates:', error);
+            console.error('Error loading candidates:', error);
+            setCandidates([]);
         } finally {
             setLoading(false);
         }
@@ -136,6 +146,21 @@ const SecondRoundNews = ({ user, onClose }) => {
                     <button onClick={handleClose} className="close-btn">×</button>
                 </div>
                 <div className="loading">Loading second round candidates...</div>
+            </div>
+        );
+    }
+
+    if (!loading && candidates.length === 0) {
+        return (
+            <div className="second-round-news-container">
+                <div className="second-round-news-header">
+                    <h3>🏆 Second Round News</h3>
+                    <button onClick={handleClose} className="close-btn">×</button>
+                </div>
+                <div className="no-candidates">
+                    <p>⚠️ No candidates available for second round simulation.</p>
+                    <p>Please add at least 2 candidates to the system first.</p>
+                </div>
             </div>
         );
     }
