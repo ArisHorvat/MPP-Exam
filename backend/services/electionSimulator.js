@@ -4,11 +4,27 @@ class ElectionSimulator {
     constructor() {
         this.automaticVoterCount = 100;
         this.topCandidatesForSecondRound = 2;
+        this.usedCNPs = new Set(); // Track used CNPs to prevent duplicates
+        this.currentElectionId = null; // Track current election session
+    }
+
+    // Generate a unique election ID
+    generateElectionId() {
+        return `election_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    // Start a new election session
+    async startNewElection() {
+        this.currentElectionId = this.generateElectionId();
+        this.usedCNPs.clear();
+        console.log(`Starting new election session: ${this.currentElectionId}`);
     }
 
     // Generate random voters for simulation
     generateRandomVoters() {
         const voters = [];
+        this.usedCNPs.clear(); // Clear used CNPs for new election
+        
         for (let i = 1; i <= this.automaticVoterCount; i++) {
             const voter = {
                 id: i,
@@ -20,15 +36,33 @@ class ElectionSimulator {
         return voters;
     }
 
-    // Generate random 5-digit CNP
+    // Generate unique random 5-digit CNP
     generateRandomCNP() {
-        return Math.floor(10000 + Math.random() * 90000).toString();
+        let cnp;
+        let attempts = 0;
+        const maxAttempts = 1000;
+        
+        do {
+            cnp = Math.floor(10000 + Math.random() * 90000).toString();
+            attempts++;
+            
+            if (attempts > maxAttempts) {
+                throw new Error('Unable to generate unique CNP after maximum attempts');
+            }
+        } while (this.usedCNPs.has(cnp));
+        
+        this.usedCNPs.add(cnp);
+        return cnp;
     }
 
     // Simulate automatic first round voting (100 voters)
     async simulateAutomaticFirstRound() {
         try {
             console.log('Starting automatic first round simulation...');
+            
+            // Clear all previous votes to start fresh
+            await pool.query('DELETE FROM votes');
+            console.log('Cleared all previous votes');
             
             // Get all candidates
             const candidatesResult = await pool.query('SELECT * FROM candidates');
@@ -60,6 +94,12 @@ class ElectionSimulator {
                 
                 // Record the vote in database
                 await this.recordSimulatedVote(voter, randomCandidate);
+            }
+
+            // Verify vote count
+            const totalVotes = await this.verifyVoteCount();
+            if (totalVotes !== this.automaticVoterCount) {
+                console.warn(`Warning: Expected ${this.automaticVoterCount} votes, but found ${totalVotes}`);
             }
 
             // Convert to array and sort by votes
@@ -118,6 +158,12 @@ class ElectionSimulator {
             // Store results
             await this.storeFirstRoundResults(updatedResults, topCandidates);
             console.log(`First round results stored successfully`);
+
+            // Verify final vote count
+            const totalVotes = await this.verifyVoteCount();
+            if (totalVotes !== this.automaticVoterCount + 1) {
+                console.warn(`Warning: Expected ${this.automaticVoterCount + 1} votes after user vote, but found ${totalVotes}`);
+            }
 
             return {
                 firstRoundResults: updatedResults,
@@ -324,6 +370,13 @@ class ElectionSimulator {
             GROUP BY c.id, c.name, c.party
             ORDER BY votes DESC
         `);
+        
+        // Debug: Log vote counts
+        console.log('First round vote counts:');
+        result.rows.forEach(row => {
+            console.log(`  ${row.candidate_name}: ${row.votes} votes`);
+        });
+        
         return result.rows;
     }
 
@@ -341,6 +394,13 @@ class ElectionSimulator {
             GROUP BY c.id, c.name, c.party
             ORDER BY votes DESC
         `);
+        
+        // Debug: Log vote counts
+        console.log('Second round vote counts:');
+        result.rows.forEach(row => {
+            console.log(`  ${row.candidate_name}: ${row.votes} votes`);
+        });
+        
         return result.rows;
     }
 
@@ -421,14 +481,26 @@ class ElectionSimulator {
                 pool.query('DELETE FROM first_round_results'),
                 pool.query('DELETE FROM second_round_results'),
                 pool.query('DELETE FROM second_round_candidates'),
-                pool.query('DELETE FROM votes WHERE cnp LIKE \'Auto Voter%\'')
+                pool.query('DELETE FROM votes') // Clear all votes, not just auto voters
             ]);
+            
+            // Reset the used CNPs set
+            this.usedCNPs.clear();
+            this.currentElectionId = null;
             
             console.log('Election simulation reset successfully');
         } catch (error) {
             console.error('Error resetting election:', error);
             throw error;
         }
+    }
+
+    // Verify total vote count
+    async verifyVoteCount() {
+        const result = await pool.query('SELECT COUNT(*) as total_votes FROM votes');
+        const totalVotes = parseInt(result.rows[0].total_votes);
+        console.log(`Total votes in database: ${totalVotes}`);
+        return totalVotes;
     }
 }
 
