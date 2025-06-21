@@ -1,0 +1,203 @@
+.candidate-list-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.list-header h1 {
+    color: #333;
+    margin: 0;
+    font-size: 2.5rem;
+    font-weight: 600;
+}
+
+.header-actions {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.chart-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.chart-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.add-candidate-btn {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.add-candidate-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.table-container {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.candidate-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.candidate-table thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.candidate-table th {
+    padding: 20px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.candidate-table td {
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+
+.candidate-row {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.candidate-row:hover {
+    background: #f8f9fa;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.candidate-avatar {
+    transition: all 0.3s ease;
+}
+
+.candidate-row:hover .candidate-avatar {
+    transform: scale(1.05);
+    border-color: #667eea !important;
+}
+
+.candidate-name {
+    font-weight: 600;
+    color: #333;
+    font-size: 1.1rem;
+}
+
+.candidate-party {
+    color: #666;
+    font-size: 1rem;
+}
+
+.candidate-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.edit-btn,
+.delete-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    opacity: 0.7;
+}
+
+.edit-btn:hover {
+    background: rgba(102, 126, 234, 0.1);
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.delete-btn:hover {
+    background: rgba(231, 76, 60, 0.1);
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.candidate-row:hover .edit-btn,
+.candidate-row:hover .delete-btn {
+    opacity: 1;
+}
+
+@media (max-width: 768px) {
+    .candidate-list-container {
+        padding: 10px;
+    }
+    
+    .list-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .list-header h1 {
+        font-size: 2rem;
+    }
+    
+    .header-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .chart-btn,
+    .add-candidate-btn {
+        width: 100%;
+    }
+    
+    .candidate-table th,
+    .candidate-table td {
+        padding: 10px;
+    }
+    
+    .candidate-name {
+        font-size: 1rem;
+    }
+    
+    .candidate-party {
+        font-size: 0.9rem;
+    }
+    
+    .candidate-actions {
+        flex-direction: column;
+        gap: 5px;
+    }
+} 
